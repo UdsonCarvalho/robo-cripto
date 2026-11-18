@@ -180,6 +180,7 @@ class Robo:
                 "intervalo_esperado_seg": self.cfg["bot"].get("intervalo_esperado_seg", 120),
                 "preco": self.ultimo_preco, "saldo_livre": cotacao, "patrimonio": self.capital(self.ultimo_preco),
                 "posicao": self.estado["posicao"], "pnl_dia": self.estado["pnl_dia"],
+                "grafico": self.estado.get("grafico"),
                 "trades_dia": self.estado["trades_dia"], "parado": self.pausado(),
                 "saldo_inicial": float(self.cfg["paper"]["saldo_inicial"]) if self.cfg["modo"] == "paper" else None,
             })
@@ -217,6 +218,17 @@ class Robo:
             self.arm.registrar_trade(linha)
         except Exception as e:
             log.error(f"Não consegui registrar a operação: {e}")
+
+    def _guardar_grafico(self, df):
+        """Dados do gráfico "preço x linha" para o painel (últimos 200 candles)."""
+        col = "mm" if "mm" in df.columns else ("ema_lenta" if "ema_lenta" in df.columns else "ema_tendencia")
+        ult = df.tail(200)
+        self.estado["grafico"] = {
+            "linha": {"mm": f"Média {self.est.get('mm_periodo', '')} dias", "ema_lenta": "EMA lenta"}.get(col, "EMA tendência"),
+            "t": [ts.strftime("%Y-%m-%d") for ts in ult.index],
+            "preco": [round(float(x), 2) for x in ult["close"]],
+            "media": [None if pd.isna(x) else round(float(x), 2) for x in ult[col]],
+        }
 
     # ---------- ordens
     def abrir(self, valor_atr):
@@ -278,12 +290,15 @@ class Robo:
         tf = self.corretora.tf_ms
         ultimo_fechado = int(agora.timestamp() * 1000) // tf * tf - tf
         if ultimo_fechado <= self.estado["ultimo_candle"]:
+            if not self.estado.get("grafico"):  # primeira vez: monta o gráfico sem reprocessar sinais
+                self._guardar_grafico(calcular_indicadores(self.corretora.candles_fechados(), self.est))
             return
         df = calcular_indicadores(self.corretora.candles_fechados(), self.est)
         if len(df) < aquecimento(self.est) or int(df.index[-1].timestamp() * 1000) < ultimo_fechado:
             return  # exchange ainda não entregou o candle; tenta no próximo ciclo
         self.estado["ultimo_candle"] = ultimo_fechado
         c = df.iloc[-1]
+        self._guardar_grafico(df)
         self._registrar_patrimonio(df.index[-1], float(c["close"]))
         log.info(f"[{self.cfg['par']}] Candle {df.index[-1]:%Y-%m-%d %H:%M} | fecha {c['close']:.2f} | ATR {c['atr']:.2f} | "
                  f"tendência {'alta' if c['close'] > c['ema_tendencia'] else 'baixa'}")
