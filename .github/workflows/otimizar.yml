@@ -1,0 +1,36 @@
+name: Otimizar estrategia
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  otimizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Rodar otimizador (custos da Foxbit do config.yaml)
+        env:
+          # Os servidores do GitHub ficam nos EUA; a Bitstamp fornece histórico longo de BTC/USD de lá.
+          DADOS_EXCHANGE: bitstamp
+          DADOS_PAR: BTC/USD
+        run: |
+          python otimizar.py | tee resultado.txt
+          { echo '## Resultado do otimizador'; echo '```'; cat resultado.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resultados
+          path: |
+            resultado.txt
+            resultados/
+            config_sugerida.yaml
+          if-no-files-found: ignore
