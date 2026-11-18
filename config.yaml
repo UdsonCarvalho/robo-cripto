@@ -11,7 +11,15 @@ exchange: foxbit      # foxbit | mercado | okx | binance | ... (corretoras supor
 # real    = dinheiro de verdade (exige CONFIRMAR_REAL=SIM no .env)
 modo: real
 
-par: BTC/BRL           # opera direto em reais
+par: BTC/BRL           # par usado pelo backtest/otimizador
+
+# Mercados que o robô opera ao mesmo tempo. Cada um tem seu teto de dinheiro.
+# "modo" aqui sobrescreve o modo geral (ex.: deixar um mercado só em observação no paper).
+pares:
+  - par: BTC/BRL
+    capital_maximo: 10
+  - par: ETH/BRL
+    capital_maximo: 10       # aprovado no otimizador (ETH, MM150) em 18/11/2026
 timeframe: 1d
 
 # Histórico usado pelo backtest/otimizador (só dados públicos, não precisa de conta).
@@ -48,6 +56,8 @@ risco:
   exposicao_maxima: 0.90     # pode usar até 90% do capital numa posição
   perda_diaria_maxima: 0.03  # perdeu 3% no dia -> para de abrir operações até amanhã
   max_trades_dia: 3
+  perda_dia_reais: 2         # perdeu R$ 2 no dia (somando os mercados) -> para e volta amanhã
+  meta_dia_reais: 5          # ganhou R$ 5 no dia -> para e volta amanhã
   capital_maximo: 20         # teto de dinheiro que o robô pode usar (0 = sem teto). R$ 20 no modo real.
 
 custos:

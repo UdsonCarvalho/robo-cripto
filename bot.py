@@ -18,6 +18,7 @@ IMPORTANTE: o stop e o alvo são vigiados pelo próprio robô. Se o robô estive
 desligado, a posição aberta fica SEM proteção. Para operar de verdade, rode num VPS.
 """
 import argparse
+import copy
 import logging
 import os
 import sys
@@ -30,7 +31,7 @@ from dotenv import load_dotenv
 from armazenamento import criar_armazenamento
 from configuracao import PASTA, carregar_config
 from estrategia import aquecimento, atualizar_trailing, calcular_indicadores, niveis_saida
-from risco import aplicar_teto_capital, pode_operar_hoje, tamanho_posicao
+from risco import aplicar_teto_capital, limites_do_dia_em_reais, pode_operar_hoje, tamanho_posicao
 
 ARQ_PARAR = os.path.join(PASTA, "PARAR")
 log = logging.getLogger("robo")
@@ -130,10 +131,12 @@ class CorretoraPaper(Corretora):
 
 # ================================================================ robô
 class Robo:
-    def __init__(self, cfg, corretora=None, armazenamento=None):
+    def __init__(self, cfg, corretora=None, armazenamento=None, pnl_total_dia=None):
         self.cfg, self.est, self.risco = cfg, cfg["estrategia"], cfg["risco"]
+        self.rotulo = cfg.get("rotulo", cfg["modo"])
+        self.pnl_total_dia = pnl_total_dia or (lambda: self.estado["pnl_dia"])
         self.taxa = cfg["custos"]["taxa"]
-        self.arm = armazenamento or criar_armazenamento(cfg["modo"])
+        self.arm = armazenamento or criar_armazenamento(self.rotulo)
         self.ultimo_preco = None
         self.estado = self._carregar_estado()
         if corretora is not None:
@@ -171,6 +174,7 @@ class Robo:
             cotacao, _ = self.corretora.saldos()
             self.arm.gravar("status", {
                 "atualizado_em": datetime.now(timezone.utc).isoformat(),
+                "rotulo": self.rotulo, "pnl_total_dia": self.pnl_total_dia(),
                 "modo": self.cfg["modo"], "exchange": self.cfg["exchange"], "par": self.cfg["par"],
                 "timeframe": self.cfg["timeframe"], "estrategia": self.est["tipo"], "risco": self.risco,
                 "intervalo_esperado_seg": self.cfg["bot"].get("intervalo_esperado_seg", 120),
@@ -233,7 +237,7 @@ class Robo:
         }
         self.estado["trades_dia"] += 1
         alvo_txt = f"{alvo:.2f}" if alvo else "sem alvo"
-        log.info(f"COMPRA {qtd_exec:.6f} a {preco_exec:.2f} | stop {stop:.2f} | alvo {alvo_txt}")
+        log.info(f"[{self.cfg['par']}] COMPRA {qtd_exec:.6f} a {preco_exec:.2f} | stop {stop:.2f} | alvo {alvo_txt}")
 
     def fechar(self, motivo):
         pos = self.estado["posicao"]
@@ -248,7 +252,7 @@ class Robo:
         lucro = qtd_exec * preco_exec * (1 - self.taxa) - pos["custo"]
         self.estado["pnl_dia"] += lucro
         self.estado["posicao"] = None
-        log.info(f"VENDA ({motivo}) {qtd_exec:.6f} a {preco_exec:.2f} | resultado {lucro:+.2f}")
+        log.info(f"[{self.cfg['par']}] VENDA ({motivo}) {qtd_exec:.6f} a {preco_exec:.2f} | resultado {lucro:+.2f}")
         self._registrar_trade({
             "entrada_em": pos["quando"], "saida_em": datetime.now(timezone.utc).isoformat(),
             "preco_entrada": pos["entrada"], "preco_saida": preco_exec, "qtd": qtd_exec,
@@ -281,7 +285,7 @@ class Robo:
         self.estado["ultimo_candle"] = ultimo_fechado
         c = df.iloc[-1]
         self._registrar_patrimonio(df.index[-1], float(c["close"]))
-        log.info(f"Candle {df.index[-1]:%Y-%m-%d %H:%M} | fecha {c['close']:.2f} | ATR {c['atr']:.2f} | "
+        log.info(f"[{self.cfg['par']}] Candle {df.index[-1]:%Y-%m-%d %H:%M} | fecha {c['close']:.2f} | ATR {c['atr']:.2f} | "
                  f"tendência {'alta' if c['close'] > c['ema_tendencia'] else 'baixa'}")
 
         pos = self.estado["posicao"]
@@ -301,8 +305,10 @@ class Robo:
             return
         ok, motivo = pode_operar_hoje(self.estado["pnl_dia"], self.estado["capital_inicio_dia"],
                                       self.estado["trades_dia"], self.risco)
+        if ok:
+            ok, motivo = limites_do_dia_em_reais(self.pnl_total_dia(), self.risco)
         if not ok:
-            log.info(f"Sinal de compra ignorado: {motivo}.")
+            log.info(f"[{self.cfg['par']}] Sinal de compra ignorado: {motivo}.")
             return
         self.abrir(float(c["atr"]))
 
@@ -332,26 +338,73 @@ class Robo:
             log.info("Robô parado.")
 
 
+def montar_mercados(cfg):
+    """Um config por mercado. Sem a lista 'pares', usa o 'par' único (compatível com versões antigas)."""
+    pares = cfg.get("pares") or [{"par": cfg["par"]}]
+    saida = []
+    for p in pares:
+        c = copy.deepcopy(cfg)
+        c["par"] = p["par"]
+        c["modo"] = p.get("modo", cfg["modo"])
+        if "capital_maximo" in p:
+            c["risco"]["capital_maximo"] = p["capital_maximo"]
+            c["paper"]["saldo_inicial"] = p["capital_maximo"]
+        c["rotulo"] = f"{c['modo']}-{p['par'].replace('/', '')}"
+        saida.append(c)
+    return saida
+
+
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--uma-vez", action="store_true", help="roda um ciclo e sai (GitHub Actions)")
+    p.add_argument("--uma-vez", action="store_true", help="roda um ciclo de cada mercado e sai (GitHub Actions)")
     args = p.parse_args()
 
     load_dotenv(os.path.join(PASTA, ".env"))
     cfg = carregar_config()
-    if cfg["modo"] == "real" and os.getenv("CONFIRMAR_REAL") != "SIM":
+    mercados = montar_mercados(cfg)
+    if any(m["modo"] == "real" for m in mercados) and os.getenv("CONFIRMAR_REAL") != "SIM":
         sys.exit("Modo REAL bloqueado. Para liberar, defina CONFIRMAR_REAL=SIM (.env ou segredo do GitHub).")
     if args.uma_vez:
-        cfg["bot"]["intervalo_esperado_seg"] = cfg["bot"].get("intervalo_nuvem_seg", 900)
-    arm = criar_armazenamento(cfg["modo"])
-    configurar_log(arm)
-    robo = Robo(cfg, armazenamento=arm)
+        for m in mercados:
+            m["bot"]["intervalo_esperado_seg"] = m["bot"].get("intervalo_nuvem_seg", 900)
+
+    log.setLevel(logging.INFO)
+    log.handlers.clear()
+    tela = logging.StreamHandler(sys.stdout)
+    tela.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"))
+    log.addHandler(tela)
+
+    robos = []
+
+    def pnl_total(modo):
+        return lambda: sum(r.estado["pnl_dia"] for r in robos if r.cfg["modo"] == modo)
+
+    for m in mercados:
+        arm = criar_armazenamento(m["rotulo"])
+        h = arm.handler_log()
+        h.addFilter(lambda rec, par=m["par"]: f"[{par}]" in rec.getMessage() or "[" not in rec.getMessage())
+        log.addHandler(h)
+        robos.append(Robo(m, armazenamento=arm, pnl_total_dia=pnl_total(m["modo"])))
+    log.info("Mercados: " + ", ".join(f"{r.cfg['par']} ({r.cfg['modo']}, até {r.risco.get('capital_maximo')})" for r in robos))
+
     if args.uma_vez:
-        robo.ciclo_protegido()
-        log.info(f"Ciclo concluído | preço {robo.ultimo_preco} | posição {'aberta' if robo.estado['posicao'] else 'nenhuma'}")
-        arm.descarregar()
-    else:
-        robo.executar()
+        for r in robos:
+            r.ciclo_protegido()
+            log.info(f"[{r.cfg['par']}] Ciclo concluído | preço {r.ultimo_preco} | "
+                     f"posição {'aberta' if r.estado['posicao'] else 'nenhuma'}")
+            r.arm.descarregar()
+        return
+
+    intervalo = cfg["bot"]["intervalo_checagem_seg"]
+    try:
+        while True:
+            for r in robos:
+                r.ciclo_protegido()
+            time.sleep(intervalo)
+    except KeyboardInterrupt:
+        for r in robos:
+            r.salvar()
+        log.info("Robô parado.")
 
 
 if __name__ == "__main__":

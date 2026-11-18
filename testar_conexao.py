@@ -18,11 +18,15 @@ if not chave or not segredo:
     sys.exit("FALHOU: faltam API_KEY e API_SECRET (no .env ou nos Secrets do GitHub).")
 
 ex = getattr(ccxt, cfg["exchange"])({"apiKey": chave, "secret": segredo, "enableRateLimit": True})
+pares = [p["par"] for p in (cfg.get("pares") or [{"par": cfg["par"]}])]
 try:
     ex.load_markets()
-    m = ex.market(cfg["par"])
+    faltando = [p for p in pares if p not in ex.markets]
+    if faltando:
+        sys.exit(f"FALHOU: a {cfg['exchange']} não tem o(s) mercado(s): {', '.join(faltando)}")
+    m = ex.market(pares[0])
     saldo = ex.fetch_balance()
-    preco = ex.fetch_ticker(cfg["par"])["last"]
+    precos = {p: ex.fetch_ticker(p)["last"] for p in pares}
 except ccxt.AuthenticationError as e:
     sys.exit(f"FALHOU: a corretora recusou a chave (confira chave/segredo e permissões). Detalhe: {e}")
 except Exception as e:
@@ -30,7 +34,9 @@ except Exception as e:
 
 livre = saldo.get("free", {})
 print("CONEXÃO OK com", cfg["exchange"])
-print(f"Par {cfg['par']} | preço atual {preco}")
-print(f"Saldo livre: {m['quote']} {livre.get(m['quote'], 0)} | {m['base']} {livre.get(m['base'], 0)}")
-print(f"Ordem mínima: quantidade {m['limits']['amount']['min']} {m['base']} | valor {m['limits']['cost']['min']} {m['quote']}")
+for p, preco in precos.items():
+    mm = ex.market(p)
+    print(f"Par {p} | preço atual {preco} | ordem mínima {mm['limits']['amount']['min']} {mm['base']}")
+print("Saldo livre: " + " | ".join(f"{moeda} {livre.get(moeda, 0)}" for moeda in
+      [m["quote"]] + [ex.market(p)["base"] for p in pares]))
 print("Nenhuma ordem foi enviada.")

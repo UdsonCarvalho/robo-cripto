@@ -32,12 +32,14 @@ def ultimas_linhas(caminho, n=25):
 
 
 def montar_dados():
+    import glob
     cfg = carregar_config()
-    modo = cfg["modo"]
     status = {}
-    caminho_status = os.path.join(LOGS, f"status_{modo}.json")
-    if os.path.exists(caminho_status):
-        with open(caminho_status, encoding="utf-8") as f:
+    arquivos = sorted(glob.glob(os.path.join(LOGS, "status_*.json")), key=os.path.getmtime, reverse=True)
+    modo = cfg["modo"]
+    if arquivos:
+        modo = os.path.basename(arquivos[0])[len("status_"):-len(".json")]  # rótulo, ex.: real-BTCBRL
+        with open(arquivos[0], encoding="utf-8") as f:
             status = json.load(f)
         idade = (datetime.now(timezone.utc) - datetime.fromisoformat(status["atualizado_em"])).total_seconds()
         status["segundos_desde_atualizacao"] = idade
@@ -53,8 +55,8 @@ def montar_dados():
         "fator_lucro": (sum(ganhos) / abs(sum(perdas))) if perdas and sum(perdas) != 0 else None,
     }
     return {
-        "config": {"modo": modo, "par": cfg["par"], "timeframe": cfg["timeframe"],
-                   "estrategia": cfg["estrategia"]["tipo"], "risco": cfg["risco"]},
+        "config": {"modo": status.get("modo", cfg["modo"]), "par": status.get("par", cfg["par"]),
+                   "timeframe": cfg["timeframe"], "estrategia": cfg["estrategia"]["tipo"], "risco": cfg["risco"]},
         "status": status, "resumo": resumo,
         "trades": trades[-30:][::-1],
         "curva": ler_csv(os.path.join(LOGS, f"patrimonio_{modo}.csv"))[-2000:],

@@ -28,3 +28,14 @@ def pode_operar_hoje(pnl_dia, capital_inicio_dia, trades_dia, cfg_risco):
 def aplicar_teto_capital(capital, cfg_risco):
     teto = cfg_risco.get("capital_maximo") or 0
     return min(capital, teto) if teto > 0 else capital
+
+
+def limites_do_dia_em_reais(pnl_total_dia, cfg_risco):
+    """Perda/meta do dia em dinheiro, somando todos os mercados (resultado realizado)."""
+    perda = cfg_risco.get("perda_dia_reais") or 0
+    meta = cfg_risco.get("meta_dia_reais") or 0
+    if perda > 0 and pnl_total_dia <= -perda:
+        return False, f"perda do dia de {pnl_total_dia:.2f} atingiu o limite de {perda:.2f}; volta amanhã"
+    if meta > 0 and pnl_total_dia >= meta:
+        return False, f"meta do dia batida ({pnl_total_dia:.2f} >= {meta:.2f}); volta amanhã"
+    return True, ""
