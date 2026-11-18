@@ -77,6 +77,17 @@
   </form>
 </section>
 
+<section id="definir" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;z-index:11">
+  <form class="login-card" id="form-definir">
+    <div class="marca"><div class="logo">₿</div><h1>Defina sua senha</h1></div>
+    <p>Crie a senha de acesso ao painel. Ela fica só com você.</p>
+    <label for="nova">Nova senha (mínimo 8 caracteres)</label><input id="nova" type="password" autocomplete="new-password" minlength="8" required>
+    <label for="nova2">Repita a senha</label><input id="nova2" type="password" autocomplete="new-password" minlength="8" required>
+    <button class="btn btn-primario" type="submit">Salvar senha e entrar</button>
+    <div class="erro" id="erro-definir"></div>
+  </form>
+</section>
+
 <div id="app">
 <header><div class="topo">
   <div class="marca" style="margin:0"><div class="logo">₿</div>
@@ -157,7 +168,24 @@ async function sb(caminho, opcoes={}){
   if(!r.ok) throw new Error("Supabase "+r.status);
   return r.status===204||opcoes.method==="POST" ? null : r.json();
 }
-function mostrar(tela){ $("login").style.display = tela==="login"?"flex":"none"; $("app").style.display = tela==="app"?"block":"none"; }
+function mostrar(tela){ $("login").style.display = tela==="login"?"flex":"none"; $("app").style.display = tela==="app"?"block":"none";
+  $("definir").style.display = tela==="definir"?"flex":"none"; }
+// link do e-mail de convite / recuperação: #access_token=...&type=invite|recovery
+const HASH = new URLSearchParams(location.hash.slice(1));
+if(HASH.get("access_token")){
+  SESSAO={access:HASH.get("access_token"),refresh:HASH.get("refresh_token"),exp:Date.now()/1000+(+HASH.get("expires_in")||3600)-60};
+  guarda.set(SESSAO);
+}
+$("form-definir").addEventListener("submit", async ev=>{
+  ev.preventDefault(); $("erro-definir").textContent="";
+  if($("nova").value!==$("nova2").value){ $("erro-definir").textContent="As senhas não são iguais."; return; }
+  try{
+    const r=await fetch(`${BASE}/auth/v1/user`,{method:"PUT",headers:{apikey:K,Authorization:"Bearer "+await token(),"Content-Type":"application/json"},
+      body:JSON.stringify({password:$("nova").value})});
+    if(!r.ok){ const j=await r.json().catch(()=>({})); throw new Error(j.msg||j.error_description||"não consegui salvar"); }
+    $("nova").value=$("nova2").value=""; history.replaceState(null,"",location.pathname); iniciar();
+  }catch(e){ $("erro-definir").textContent=e.message; }
+});
 function sair(){ SESSAO=null; guarda.limpar(); clearInterval(TIMER); mostrar("login"); }
 
 $("form-login").addEventListener("submit", async ev=>{
@@ -287,5 +315,6 @@ async function atualizar(){
 function iniciar(){ mostrar("app"); atualizar(); clearInterval(TIMER); TIMER=setInterval(atualizar, CFG.fonte==="supabase"?30000:10000); }
 
 if(CFG.fonte!=="supabase"){ $("btn-sair").style.display="none"; $("btn-pausa").style.display="none"; iniciar(); }
+else if(HASH.get("type")==="invite"||HASH.get("type")==="recovery") mostrar("definir");
 else if(SESSAO) iniciar(); else mostrar("login");
 </script></body></html>
