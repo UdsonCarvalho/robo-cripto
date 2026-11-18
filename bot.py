@@ -1,0 +1,358 @@
+"""Robô de operação — mercado à vista (spot), só compra (sem alavancagem, sem venda a descoberto).
+
+Uso:
+  py -3.13 bot.py            # fica rodando (no seu PC)
+  py -3.13 bot.py --uma-vez  # roda um ciclo e sai (é assim que o GitHub Actions usa)
+
+O modo vem do config.yaml (paper | demo | testnet | real).
+  demo = conta Demo Trading oficial da corretora (OKX ou Binance): você acompanha as ordens no app.
+
+Travas de segurança:
+  - modo real só roda com CONFIRMAR_REAL=SIM no .env;
+  - limite de perda diária e de trades por dia;
+  - teto de capital (risco.capital_maximo);
+  - pausa: arquivo PARAR na pasta, ou "bot: pausado: true" no config.yaml -> não abre novas
+    operações (continua cuidando do stop/alvo da posição aberta).
+
+IMPORTANTE: o stop e o alvo são vigiados pelo próprio robô. Se o robô estiver
+desligado, a posição aberta fica SEM proteção. Para operar de verdade, rode num VPS.
+"""
+import argparse
+import logging
+import os
+import sys
+import time
+from datetime import datetime, timezone
+
+import pandas as pd
+from dotenv import load_dotenv
+
+from armazenamento import criar_armazenamento
+from configuracao import PASTA, carregar_config
+from estrategia import aquecimento, atualizar_trailing, calcular_indicadores, niveis_saida
+from risco import aplicar_teto_capital, pode_operar_hoje, tamanho_posicao
+
+ARQ_PARAR = os.path.join(PASTA, "PARAR")
+log = logging.getLogger("robo")
+
+
+def configurar_log(armazenamento):
+    log.setLevel(logging.INFO)
+    log.handlers.clear()
+    tela = logging.StreamHandler(sys.stdout)
+    tela.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"))
+    log.addHandler(tela)
+    log.addHandler(armazenamento.handler_log())
+
+
+# ================================================================ corretoras
+class Corretora:
+    """Conexão real com a exchange (testnet ou conta real) via ccxt."""
+
+    def __init__(self, cfg):
+        import ccxt
+
+        self.cfg, self.par = cfg, cfg["par"]
+        opcoes = {"enableRateLimit": True, "options": {"defaultType": "spot"}}
+        prefixo = {"demo": "DEMO_", "testnet": "TESTNET_", "real": ""}.get(cfg["modo"])
+        if prefixo is not None:
+            opcoes.update(apiKey=os.getenv(prefixo + "API_KEY"), secret=os.getenv(prefixo + "API_SECRET"),
+                          password=os.getenv(prefixo + "API_PASSWORD") or None)  # OKX exige a passphrase
+        self.ex = getattr(ccxt, cfg["exchange"])(opcoes)
+        if cfg["modo"] == "demo":
+            if cfg["exchange"] == "binance":
+                self.ex.enable_demo_trading(True)   # Binance Demo Trading
+            else:
+                self.ex.set_sandbox_mode(True)      # OKX: conta Demo Trading
+        elif cfg["modo"] == "testnet":
+            self.ex.set_sandbox_mode(True)
+        if cfg["modo"] != "paper" and not self.ex.apiKey:
+            sys.exit("Faltam as chaves de API no arquivo .env para o modo " + cfg["modo"])
+        self.ex.load_markets()
+        mercado = self.ex.market(self.par)
+        self.base, self.cotacao = mercado["base"], mercado["quote"]
+        self.custo_minimo = ((mercado.get("limits") or {}).get("cost") or {}).get("min") or 0
+        self.tf_ms = self.ex.parse_timeframe(cfg["timeframe"]) * 1000
+
+    def candles_fechados(self, limite=1000):
+        dados = self.ex.fetch_ohlcv(self.par, self.cfg["timeframe"], limit=limite)
+        df = pd.DataFrame(dados, columns=["timestamp", "open", "high", "low", "close", "volume"])
+        agora_ms = self.ex.milliseconds()
+        df = df[df["timestamp"] + self.tf_ms <= agora_ms]  # descarta o candle ainda em formação
+        df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
+        return df.set_index("timestamp").astype(float)
+
+    def preco(self):
+        return float(self.ex.fetch_ticker(self.par)["last"])
+
+    def saldos(self):
+        livre = self.ex.fetch_balance().get("free", {})
+        return float(livre.get(self.cotacao) or 0), float(livre.get(self.base) or 0)
+
+    def comprar(self, qtd):
+        qtd = float(self.ex.amount_to_precision(self.par, qtd))
+        return self._executado(self.ex.create_market_buy_order(self.par, qtd), qtd)
+
+    def vender(self, qtd):
+        qtd = float(self.ex.amount_to_precision(self.par, qtd))
+        return self._executado(self.ex.create_market_sell_order(self.par, qtd), qtd)
+
+    def _executado(self, ordem, qtd):
+        preco = ordem.get("average") or ordem.get("price") or self.preco()
+        return float(ordem.get("filled") or qtd), float(preco)
+
+
+class CorretoraPaper(Corretora):
+    """Usa preços reais, mas as ordens são simuladas numa carteira local."""
+
+    def __init__(self, cfg, carteira):
+        super().__init__(cfg)
+        self.carteira = carteira
+        self.taxa, self.slip = cfg["custos"]["taxa"], cfg["custos"]["slippage"]
+
+    def saldos(self):
+        return self.carteira["cotacao"], self.carteira["base"]
+
+    def comprar(self, qtd):
+        preco = float(self.preco()) * (1 + self.slip)
+        qtd = min(float(qtd), self.carteira["cotacao"] / (preco * (1 + self.taxa)))
+        self.carteira["cotacao"] -= qtd * preco * (1 + self.taxa)
+        self.carteira["base"] += qtd
+        return qtd, preco
+
+    def vender(self, qtd):
+        qtd = min(float(qtd), self.carteira["base"])
+        preco = float(self.preco()) * (1 - self.slip)
+        self.carteira["cotacao"] += qtd * preco * (1 - self.taxa)
+        self.carteira["base"] -= qtd
+        return qtd, preco
+
+
+# ================================================================ robô
+class Robo:
+    def __init__(self, cfg, corretora=None, armazenamento=None):
+        self.cfg, self.est, self.risco = cfg, cfg["estrategia"], cfg["risco"]
+        self.taxa = cfg["custos"]["taxa"]
+        self.arm = armazenamento or criar_armazenamento(cfg["modo"])
+        self.ultimo_preco = None
+        self.estado = self._carregar_estado()
+        if corretora is not None:
+            self.corretora = corretora
+        elif cfg["modo"] == "paper":
+            self.corretora = CorretoraPaper(cfg, self.estado["carteira_paper"])
+        else:
+            self.corretora = Corretora(cfg)
+        self._reconciliar()
+
+    # ---------- estado persistente (sobrevive a reinício)
+    def _carregar_estado(self):
+        salvo = self.arm.ler("estado")
+        if salvo:
+            return salvo
+        return {
+            "posicao": None, "dia": None, "pnl_dia": 0.0, "trades_dia": 0,
+            "capital_inicio_dia": 0.0, "ultimo_candle": 0,
+            "carteira_paper": {"cotacao": float(self.cfg["paper"]["saldo_inicial"]), "base": 0.0},
+        }
+
+    def pausado(self):
+        return os.path.exists(ARQ_PARAR) or bool(self.cfg["bot"].get("pausado"))
+
+    def salvar(self):
+        self.arm.gravar("estado", self.estado)
+        self._gravar_status()
+        self.arm.descarregar()
+
+    def _gravar_status(self):
+        """Lido pelo painel."""
+        try:
+            if self.ultimo_preco is None:
+                return
+            cotacao, _ = self.corretora.saldos()
+            self.arm.gravar("status", {
+                "atualizado_em": datetime.now(timezone.utc).isoformat(),
+                "modo": self.cfg["modo"], "exchange": self.cfg["exchange"], "par": self.cfg["par"],
+                "timeframe": self.cfg["timeframe"], "estrategia": self.est["tipo"], "risco": self.risco,
+                "intervalo_esperado_seg": self.cfg["bot"].get("intervalo_esperado_seg", 120),
+                "preco": self.ultimo_preco, "saldo_livre": cotacao, "patrimonio": self.capital(self.ultimo_preco),
+                "posicao": self.estado["posicao"], "pnl_dia": self.estado["pnl_dia"],
+                "trades_dia": self.estado["trades_dia"], "parado": self.pausado(),
+                "saldo_inicial": float(self.cfg["paper"]["saldo_inicial"]) if self.cfg["modo"] == "paper" else None,
+            })
+        except Exception as e:
+            log.warning(f"Não consegui atualizar o status do painel: {e}")
+
+    def _registrar_patrimonio(self, quando, preco):
+        self.arm.registrar_patrimonio({"timestamp": quando.isoformat(), "preco": round(preco, 2),
+                                       "patrimonio": round(self.capital(preco), 4)})
+
+    def _reconciliar(self):
+        """Se o estado diz que há posição, mas a moeda não está na conta, limpa o estado."""
+        pos = self.estado["posicao"]
+        if pos and self.cfg["modo"] != "paper":
+            _, base = self.corretora.saldos()
+            if base < pos["qtd"] * 0.5:
+                log.warning("Estado tinha posição aberta, mas o saldo não confere. Limpando o estado.")
+                self.estado["posicao"] = None
+
+    # ---------- utilidades
+    def capital(self, preco):
+        cotacao, _ = self.corretora.saldos()
+        pos = self.estado["posicao"]
+        return cotacao + (pos["qtd"] * preco if pos else 0)
+
+    def _virar_dia(self, agora, preco):
+        hoje = agora.strftime("%Y-%m-%d")
+        if self.estado["dia"] != hoje:
+            self.estado.update(dia=hoje, pnl_dia=0.0, trades_dia=0,
+                               capital_inicio_dia=aplicar_teto_capital(self.capital(preco), self.risco))
+            log.info(f"Novo dia {hoje}. Capital de referência: {self.estado['capital_inicio_dia']:.2f}")
+
+    def _registrar_trade(self, linha):
+        try:
+            self.arm.registrar_trade(linha)
+        except Exception as e:
+            log.error(f"Não consegui registrar a operação: {e}")
+
+    # ---------- ordens
+    def abrir(self, valor_atr):
+        preco = self.corretora.preco()
+        stop, _ = niveis_saida(preco, valor_atr, self.est)
+        cotacao, _ = self.corretora.saldos()
+        capital = aplicar_teto_capital(cotacao, self.risco)
+        qtd = tamanho_posicao(capital, preco, stop, self.risco)
+        if qtd * preco < max(self.corretora.custo_minimo, 1e-9):
+            log.warning(f"Ordem de {qtd * preco:.2f} abaixo do mínimo da exchange ({self.corretora.custo_minimo}). Pulando.")
+            return
+        qtd_exec, preco_exec = self.corretora.comprar(qtd)
+        stop, alvo = niveis_saida(preco_exec, valor_atr, self.est)  # recalcula com o preço executado
+        self.estado["posicao"] = {
+            "qtd": qtd_exec, "entrada": preco_exec, "stop": stop, "alvo": alvo,
+            "custo": qtd_exec * preco_exec * (1 + self.taxa),
+            "quando": datetime.now(timezone.utc).isoformat(),
+        }
+        self.estado["trades_dia"] += 1
+        alvo_txt = f"{alvo:.2f}" if alvo else "sem alvo"
+        log.info(f"COMPRA {qtd_exec:.6f} a {preco_exec:.2f} | stop {stop:.2f} | alvo {alvo_txt}")
+
+    def fechar(self, motivo):
+        pos = self.estado["posicao"]
+        _, base_livre = self.corretora.saldos()
+        qtd = min(pos["qtd"], base_livre)  # a taxa às vezes é cobrada na própria moeda
+        preco_ref = self.corretora.preco()
+        if qtd * preco_ref < self.corretora.custo_minimo:
+            log.warning("Saldo restante abaixo do mínimo da exchange (poeira). Encerrando posição no estado.")
+            self.estado["posicao"] = None
+            return
+        qtd_exec, preco_exec = self.corretora.vender(qtd)
+        lucro = qtd_exec * preco_exec * (1 - self.taxa) - pos["custo"]
+        self.estado["pnl_dia"] += lucro
+        self.estado["posicao"] = None
+        log.info(f"VENDA ({motivo}) {qtd_exec:.6f} a {preco_exec:.2f} | resultado {lucro:+.2f}")
+        self._registrar_trade({
+            "entrada_em": pos["quando"], "saida_em": datetime.now(timezone.utc).isoformat(),
+            "preco_entrada": pos["entrada"], "preco_saida": preco_exec, "qtd": qtd_exec,
+            "lucro": round(lucro, 4), "motivo": motivo,
+        })
+
+    # ---------- ciclo principal
+    def ciclo(self, agora=None):
+        agora = agora or datetime.now(timezone.utc)
+        preco = self.corretora.preco()
+        self.ultimo_preco = float(preco)
+        self._virar_dia(agora, preco)
+
+        # 1) vigia stop/alvo a cada ciclo
+        pos = self.estado["posicao"]
+        if pos:
+            if preco <= pos["stop"]:
+                self.fechar("stop")
+            elif pos["alvo"] is not None and preco >= pos["alvo"]:
+                self.fechar("alvo")
+
+        # 2) estratégia só roda quando fecha um candle novo
+        tf = self.corretora.tf_ms
+        ultimo_fechado = int(agora.timestamp() * 1000) // tf * tf - tf
+        if ultimo_fechado <= self.estado["ultimo_candle"]:
+            return
+        df = calcular_indicadores(self.corretora.candles_fechados(), self.est)
+        if len(df) < aquecimento(self.est) or int(df.index[-1].timestamp() * 1000) < ultimo_fechado:
+            return  # exchange ainda não entregou o candle; tenta no próximo ciclo
+        self.estado["ultimo_candle"] = ultimo_fechado
+        c = df.iloc[-1]
+        self._registrar_patrimonio(df.index[-1], float(c["close"]))
+        log.info(f"Candle {df.index[-1]:%Y-%m-%d %H:%M} | fecha {c['close']:.2f} | ATR {c['atr']:.2f} | "
+                 f"tendência {'alta' if c['close'] > c['ema_tendencia'] else 'baixa'}")
+
+        pos = self.estado["posicao"]
+        if pos:
+            novo_stop = float(atualizar_trailing(pos["stop"], float(c["close"]), float(c["atr"]), self.est))
+            if novo_stop > pos["stop"]:
+                log.info(f"Stop móvel subiu: {pos['stop']:.2f} -> {novo_stop:.2f}")
+                pos["stop"] = novo_stop
+            if c["saida"]:
+                self.fechar("sinal de saída")
+            return
+
+        if not c["entrada"]:
+            return
+        if self.pausado():
+            log.info("Sinal de compra ignorado: robô pausado.")
+            return
+        ok, motivo = pode_operar_hoje(self.estado["pnl_dia"], self.estado["capital_inicio_dia"],
+                                      self.estado["trades_dia"], self.risco)
+        if not ok:
+            log.info(f"Sinal de compra ignorado: {motivo}.")
+            return
+        self.abrir(float(c["atr"]))
+
+    def ciclo_protegido(self):
+        import ccxt
+        try:
+            self.ciclo()
+        except ccxt.NetworkError as e:
+            log.warning(f"Falha de rede, tento de novo no próximo ciclo: {e}")
+        except ccxt.ExchangeError as e:
+            log.error(f"Erro da corretora: {e}")
+        except Exception:
+            log.exception("Erro inesperado")
+        self.salvar()
+
+    def executar(self):
+        log.info(f"Robô iniciado | modo {self.cfg['modo'].upper()} | {self.cfg['exchange']} {self.cfg['par']} {self.cfg['timeframe']}")
+        intervalo = self.cfg["bot"]["intervalo_checagem_seg"]
+        try:
+            while True:
+                self.ciclo_protegido()
+                time.sleep(intervalo)
+        except KeyboardInterrupt:
+            self.salvar()
+            if self.estado["posicao"]:
+                log.warning("Robô parado COM posição aberta. O stop não está mais sendo vigiado!")
+            log.info("Robô parado.")
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--uma-vez", action="store_true", help="roda um ciclo e sai (GitHub Actions)")
+    args = p.parse_args()
+
+    load_dotenv(os.path.join(PASTA, ".env"))
+    cfg = carregar_config()
+    if cfg["modo"] == "real" and os.getenv("CONFIRMAR_REAL") != "SIM":
+        sys.exit("Modo REAL bloqueado. Para liberar, defina CONFIRMAR_REAL=SIM (.env ou segredo do GitHub).")
+    if args.uma_vez:
+        cfg["bot"]["intervalo_esperado_seg"] = cfg["bot"].get("intervalo_nuvem_seg", 900)
+    arm = criar_armazenamento(cfg["modo"])
+    configurar_log(arm)
+    robo = Robo(cfg, armazenamento=arm)
+    if args.uma_vez:
+        robo.ciclo_protegido()
+        log.info(f"Ciclo concluído | preço {robo.ultimo_preco} | posição {'aberta' if robo.estado['posicao'] else 'nenhuma'}")
+        arm.descarregar()
+    else:
+        robo.executar()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,64 @@
+# ============================================================
+#  CONFIGURAÇÃO DO ROBÔ
+#  Dica: rode "py -3.13 otimizar.py" e copie o bloco "estrategia"
+#  e o "timeframe" do arquivo config_sugerida.yaml para cá.
+# ============================================================
+
+exchange: foxbit      # foxbit | mercado | okx | binance | ... (corretoras suportadas pelo ccxt)
+# paper   = simulado no seu PC com preços reais (não precisa de chave nem conta)
+# demo    = conta DEMO oficial da corretora (acompanhe as ordens no app). Precisa das chaves DEMO_ no .env
+# testnet = testnet da Binance (só para exchange: binance)
+# real    = dinheiro de verdade (exige CONFIRMAR_REAL=SIM no .env)
+modo: paper
+
+par: BTC/BRL           # opera direto em reais
+timeframe: 4h
+
+# Histórico usado pelo backtest/otimizador (só dados públicos, não precisa de conta).
+# A Foxbit tem pouco histórico pela API, então testamos com o BTC/USDT da OKX (anos de dados).
+dados:
+  exchange: okx
+  par: BTC/USDT
+
+estrategia:
+  tipo: rompimento          # ema_cruzamento | rompimento
+  ema_tendencia: 200        # só compra acima dessa média
+  atr_periodo: 14
+  stop_atr: 3.0             # stop inicial = entrada - 3 x ATR
+  alvo_atr: 0               # 0 = sem alvo fixo (deixa o lucro correr)
+  trailing_atr: 3.0         # stop móvel: acompanha o preço a 3 x ATR (0 = desliga)
+  # --- usado só no tipo rompimento
+  rompimento_entrada: 55    # compra ao romper a máxima dos últimos 55 candles
+  rompimento_saida: 20      # sai ao perder a mínima dos últimos 20 candles
+  # --- usado só no tipo ema_cruzamento
+  ema_rapida: 20
+  ema_lenta: 50
+  rsi_periodo: 14
+  rsi_min: 45
+  rsi_max: 70
+  saida_cruzamento: false   # sair quando a rápida cruzar a lenta para baixo
+
+risco:
+  # Com capital pequeno (R$ 50) os percentuais precisam ser maiores, senão a ordem
+  # fica abaixo do mínimo da corretora. 5% de R$ 50 = R$ 2,50 de perda máxima por operação.
+  risco_por_trade: 0.05      # perde no máximo 5% do capital se bater o stop
+  exposicao_maxima: 0.90     # pode usar até 90% do capital numa posição
+  perda_diaria_maxima: 0.03  # perdeu 3% no dia -> para de abrir operações até amanhã
+  max_trades_dia: 3
+  capital_maximo: 0          # teto de dinheiro que o robô pode usar (0 = sem teto). Use no modo real!
+
+custos:
+  taxa: 0.005       # 0,5% por ordem a mercado (taxa "taker" padrão da Foxbit; confira a sua no app)
+  slippage: 0.001   # 0,1% de escorregão estimado (livro em reais é menor)
+
+paper:
+  saldo_inicial: 50     # reais fictícios do modo paper (igual ao que você vai investir)
+
+bot:
+  intervalo_checagem_seg: 30    # no PC: checa a cada 30 s
+  intervalo_nuvem_seg: 900      # na nuvem (GitHub Actions): roda a cada ~15 min
+  pausado: false                # true = não abre novas operações (cuida só da posição aberta)
+
+backtest:
+  inicio: "2023-01-01"
+  saldo_inicial: 50
