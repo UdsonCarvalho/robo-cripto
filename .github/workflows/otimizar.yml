@@ -2,6 +2,11 @@ name: Otimizar estrategia
 
 on:
   workflow_dispatch:
+    inputs:
+      par:
+        description: "Par do histórico (Bitstamp), ex.: BTC/USD ou ETH/USD"
+        default: "BTC/USD"
+        required: true
 
 permissions:
   contents: read
@@ -21,10 +26,10 @@ jobs:
         env:
           # Os servidores do GitHub ficam nos EUA; a Bitstamp fornece histórico longo de BTC/USD de lá.
           DADOS_EXCHANGE: bitstamp
-          DADOS_PAR: BTC/USD
+          DADOS_PAR: ${{ inputs.par }}
         run: |
           python otimizar.py | tee resultado.txt
-          { echo '## Resultado do otimizador'; echo '```'; cat resultado.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          { echo "## Resultado do otimizador (${{ inputs.par }})"; echo '```'; cat resultado.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
