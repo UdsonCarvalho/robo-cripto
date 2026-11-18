@@ -16,6 +16,9 @@
   .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
     background:var(--surface-2);border:1px solid var(--border);font-size:12px;color:var(--text-secondary)}
   .dot{width:8px;height:8px;border-radius:50%}
+  .abas{display:flex;gap:8px;flex-wrap:wrap;max-width:1300px;margin:16px auto 0;padding:0 24px}
+  .aba{background:var(--surface-2);border:1px solid var(--border);color:var(--text-secondary);border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit;font-size:13px}
+  .aba.ativa{border-color:var(--series-1);color:var(--text-primary)}
   main{padding:20px 24px;display:grid;gap:16px;max-width:1300px;margin:0 auto}
   .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
   .card{background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:16px}
@@ -42,6 +45,7 @@
     <span class="pill" id="pill-vivo"><span class="dot" id="dot"></span><span id="vivo-txt"></span></span>
   </div>
 </header>
+<div class="abas" id="abas"></div>
 <main>
   <section class="tiles">
     <div class="card"><div class="label">Patrimônio</div><div class="valor" id="t-patr">—</div><div class="det" id="t-patr-d"></div></div>
@@ -66,7 +70,12 @@ let MOEDA="";
 const din=(v,d=2)=>(MOEDA==="R$"?"R$ "+fmt(v,d):fmt(v,d)+" "+MOEDA);
 const pct=v=>v==null?"—":(v>=0?"+":"")+fmt(v*100,2)+"%";
 const sinal=v=>v>0?"up":v<0?"down":"";
-let grafico;
+let grafico, SEL=null;
+function desenharAbas(lista){
+  const el=document.getElementById("abas"); if(!el) return;
+  el.innerHTML=lista.map(v=>{const r=v.rotulo||v.modo;
+    return `<button class="aba${r===SEL?" ativa":""}" onclick="SEL='${r}';atualizar()">${v.par||""} · ${(v.modo||"").toUpperCase()}</button>`}).join("");
+}
 const CFG=window.PAINEL||{fonte:"local"};
 async function sb(caminho){
   const r=await fetch(CFG.url.replace(/\/$/,"")+"/rest/v1/"+caminho,{headers:Object.assign({apikey:CFG.anonKey},CFG.anonKey.startsWith("eyJ")?{Authorization:"Bearer "+CFG.anonKey}:{})});
@@ -74,10 +83,14 @@ async function sb(caminho){
 }
 async function carregarDados(){
   if(CFG.fonte!=="supabase") return (await fetch("/api")).json();
-  // mostra o modo que atualizou por último (real ou paper)
+  // um status por mercado (ex.: real-BTCBRL, paper-ETHBRL)
   const todos=await sb(`robo_kv?chave=like.*:status&select=chave,valor`);
-  todos.sort((a,b)=>new Date(b.valor.atualizado_em)-new Date(a.valor.atualizado_em));
-  const m=todos.length?todos[0].valor.modo:(CFG.modo||"paper");
+  const lista=todos.map(x=>x.valor).filter(v=>v.rotulo)
+    .sort((a,b)=>(a.modo==="real"?0:1)-(b.modo==="real"?0:1) || a.par.localeCompare(b.par));
+  if(!lista.length && todos.length) lista.push(todos[0].valor);
+  if(!SEL || !lista.find(v=>(v.rotulo||v.modo)===SEL)) SEL=lista.length?(lista[0].rotulo||lista[0].modo):(CFG.modo||"paper");
+  desenharAbas(lista);
+  const m=SEL;
   const [kv,trades,lucros,curva,logs]=await Promise.all([
     sb(`robo_kv?chave=eq.${m}:status&select=valor`),
     sb(`robo_trades?modo=eq.${m}&order=id.desc&limit=30`),
@@ -115,7 +128,9 @@ async function atualizar(){
   document.getElementById("t-trades").textContent=r.trades;
   document.getElementById("t-trades-d").textContent=r.trades?`acerto ${fmt(r.acerto*100,0)}% · fator ${r.fator_lucro==null?"—":fmt(r.fator_lucro)}`:"nenhuma ainda";
   const h=document.getElementById("t-hoje"); h.textContent=fmt(s.pnl_dia); h.className="valor "+sinal(s.pnl_dia);
-  document.getElementById("t-hoje-d").textContent=`${s.trades_dia??0} de ${c.risco.max_trades_dia} operações · limite de perda ${fmt(c.risco.perda_diaria_maxima*100,0)}%`;
+  const rr=c.risco||{}; document.getElementById("t-hoje-d").textContent=rr.perda_dia_reais?
+    `total do dia (todos os mercados): ${din(s.pnl_total_dia??s.pnl_dia)} · para em −${din(rr.perda_dia_reais,0)} ou +${din(rr.meta_dia_reais||0,0)}`:
+    `${s.trades_dia??0} de ${rr.max_trades_dia} operações · limite de perda ${fmt((rr.perda_diaria_maxima||0)*100,0)}%`;
 
   const p=s.posicao, pd=document.getElementById("posicao");
   if(!p){ pd.innerHTML='<div class="vazio">Sem posição. O robô está esperando um sinal de compra.</div>'; }
