@@ -9,7 +9,7 @@ exchange: foxbit      # foxbit | mercado | okx | binance | ... (corretoras supor
 # demo    = conta DEMO oficial da corretora (acompanhe as ordens no app). Precisa das chaves DEMO_ no .env
 # testnet = testnet da Binance (só para exchange: binance)
 # real    = dinheiro de verdade (exige CONFIRMAR_REAL=SIM no .env)
-modo: paper
+modo: real
 
 par: BTC/BRL           # opera direto em reais
 timeframe: 1d
