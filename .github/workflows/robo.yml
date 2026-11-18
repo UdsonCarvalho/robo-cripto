@@ -1,0 +1,34 @@
+name: Robo (a cada 15 min)
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # o GitHub pode atrasar alguns minutos; é normal
+  workflow_dispatch:          # botão "Run workflow" para rodar na hora
+
+concurrency:
+  group: robo
+  cancel-in-progress: false   # nunca roda dois ao mesmo tempo
+
+permissions:
+  contents: read
+
+jobs:
+  ciclo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Rodar um ciclo do robo
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          # Só para o modo real (deixe sem cadastrar enquanto estiver no paper):
+          API_KEY: ${{ secrets.API_KEY }}
+          API_SECRET: ${{ secrets.API_SECRET }}
+          CONFIRMAR_REAL: ${{ secrets.CONFIRMAR_REAL }}
+        run: python bot.py --uma-vez
