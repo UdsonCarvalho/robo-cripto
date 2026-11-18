@@ -72,7 +72,9 @@ def ler_csv(caminho):
 def fonte_dados(cfg):
     """Corretora/par de onde vem o histórico (pode ser diferente da corretora onde o robô opera)."""
     d = cfg.get("dados") or {}
-    return d.get("exchange", cfg["exchange"]), d.get("par", cfg["par"])
+    ex = os.getenv("DADOS_EXCHANGE") or d.get("exchange", cfg["exchange"])
+    par = os.getenv("DADOS_PAR") or d.get("par", cfg["par"])
+    return ex, par
 
 
 def inicio_com_aquecimento(inicio, tf, cfg_est):
