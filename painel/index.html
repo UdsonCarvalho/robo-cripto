@@ -1,99 +1,204 @@
 <!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0f12">
 <title>Robô Cripto — Painel</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="config.js"></script>
 <style>
-  :root{color-scheme:dark;--bg:#111110;--surface-1:#1a1a19;--surface-2:#232321;--border:#2f2f2c;
-    --text-primary:#f0efec;--text-secondary:#c3c2b7;--text-muted:#8f8e86;--series-1:#3987e5;
-    --good:#0ca30c;--critical:#e66767;--warning:#c98500}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text-primary);
-    font:14px/1.45 system-ui,"Segoe UI",sans-serif}
-  header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
-    padding:18px 24px;border-bottom:1px solid var(--border)}
-  h1{font-size:18px;margin:0} .sub{color:var(--text-secondary);font-size:13px}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
-    background:var(--surface-2);border:1px solid var(--border);font-size:12px;color:var(--text-secondary)}
-  .dot{width:8px;height:8px;border-radius:50%}
-  .abas{display:flex;gap:8px;flex-wrap:wrap;max-width:1300px;margin:16px auto 0;padding:0 24px}
-  .aba{background:var(--surface-2);border:1px solid var(--border);color:var(--text-secondary);border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit;font-size:13px}
-  .aba.ativa{border-color:var(--series-1);color:var(--text-primary)}
-  main{padding:20px 24px;display:grid;gap:16px;max-width:1300px;margin:0 auto}
-  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
-  .card{background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:16px}
-  .label{color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-  .valor{font-size:26px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums}
-  .det{color:var(--text-secondary);font-size:12px;margin-top:2px}
-  .grid2{display:grid;grid-template-columns:2fr 1fr;gap:16px} @media(max-width:900px){.grid2{grid-template-columns:1fr}}
-  h2{font-size:14px;margin:0 0 10px;color:var(--text-secondary);font-weight:600}
+  :root{color-scheme:dark;--bg:#0d0f12;--surface-1:#15181d;--surface-2:#1c2027;--border:#262b33;
+    --text-primary:#f0efec;--text-secondary:#c3c2b7;--text-muted:#8f8e86;--series-1:#3987e5;--series-2:#c98500;
+    --good:#0ca30c;--critical:#e66767;--radius:16px}
+  *{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--text-primary);
+    font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  body{background:radial-gradient(1200px 500px at 10% -10%,rgba(57,135,229,.12),transparent 60%),
+       radial-gradient(900px 400px at 100% 0%,rgba(201,133,0,.08),transparent 60%),var(--bg);min-height:100vh}
+  button{font:inherit;cursor:pointer}
+  /* ---------- login */
+  #login{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;z-index:10}
+  .login-card{width:100%;max-width:380px;background:rgba(21,24,29,.92);backdrop-filter:blur(12px);border:1px solid var(--border);
+    border-radius:20px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+  .marca{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#3987e5,#6a5cff);display:grid;place-items:center;font-weight:700}
+  .login-card h1{font-size:20px;margin:0} .login-card p{color:var(--text-muted);margin:4px 0 20px}
+  label{display:block;font-size:12px;color:var(--text-secondary);margin:12px 0 6px}
+  input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-primary);font:inherit}
+  input:focus{outline:2px solid var(--series-1);outline-offset:1px}
+  .btn{border:0;border-radius:12px;padding:12px 16px;font-weight:600}
+  .btn-primario{width:100%;margin-top:20px;background:linear-gradient(135deg,#3987e5,#5a6cff);color:#fff}
+  .erro{color:var(--critical);font-size:13px;min-height:18px;margin-top:10px}
+  /* ---------- app */
+  #app{display:none}
+  header{position:sticky;top:0;z-index:5;background:rgba(13,15,18,.8);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .topo{max-width:1240px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .topo h1{font-size:17px;margin:0} .sub{color:var(--text-muted);font-size:12px}
+  .acoes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);font-size:12px;color:var(--text-secondary)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--text-muted)}
+  .btn-sec{background:var(--surface-2);border:1px solid var(--border);color:var(--text-secondary);padding:7px 12px;border-radius:10px;font-size:12px}
+  .btn-pausa{padding:7px 12px;border-radius:10px;font-size:12px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-primary)}
+  .btn-pausa.pausado{border-color:var(--critical);color:var(--critical)}
+  main{max-width:1240px;margin:0 auto;padding:18px 20px 40px;display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+  main>*,.grid2>*,.tiles>*{min-width:0}
+  @media(max-width:600px){main{padding:14px 12px 32px}.topo{padding:12px}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.card{padding:14px}}
+  .abas{display:inline-flex;background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:4px;gap:4px;flex-wrap:wrap}
+  .aba{background:transparent;border:0;color:var(--text-secondary);border-radius:9px;padding:7px 14px;font-size:13px}
+  .aba.ativa{background:var(--surface-2);color:var(--text-primary);box-shadow:inset 0 0 0 1px var(--series-1)}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+  .tiles .card:last-child{grid-column:span 1}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,.02),transparent),var(--surface-1);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+  .label{color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  .valor{font-size:24px;font-weight:650;margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .det{color:var(--text-secondary);font-size:12px;margin-top:4px}
+  .grid2{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px} @media(max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+  h2{font-size:14px;margin:0 0 12px;color:var(--text-secondary);font-weight:600}
+  .chart-box{position:relative;height:280px} @media(max-width:600px){.chart-box{height:220px}.valor{font-size:20px}}
+  .alerta{padding:10px 12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-secondary);font-size:13px;margin-top:10px}
   table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13px}
-  th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--border)} th{color:var(--text-muted);font-weight:500}
+  th,td{text-align:right;padding:8px;border-bottom:1px solid var(--border)} th{color:var(--text-muted);font-weight:500}
   th:first-child,td:first-child{text-align:left}
+  .tabela-wrap{overflow-x:auto}
   .up::before{content:"▲ ";color:var(--good)} .down::before{content:"▼ ";color:var(--critical)}
-  pre{margin:0;max-height:300px;overflow:auto;font:12px/1.5 Consolas,monospace;color:var(--text-secondary);white-space:pre-wrap}
-  .vazio{color:var(--text-muted);padding:24px 0;text-align:center}
-  .pos-linha{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)}
-  .pos-linha span:first-child{color:var(--text-muted)}
-  .chart-box{position:relative;height:300px}
+  pre{margin:0;max-height:280px;overflow:auto;font:12px/1.55 ui-monospace,Consolas,monospace;color:var(--text-secondary);white-space:pre-wrap}
+  .vazio{color:var(--text-muted);padding:22px 0;text-align:center}
+  .linha-pos{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+  .linha-pos span:first-child{color:var(--text-muted)}
   details summary{cursor:pointer;color:var(--text-muted);font-size:12px;margin-top:8px}
 </style></head><body>
-<header>
-  <div><h1>Robô Cripto</h1><div class="sub" id="sub">carregando…</div></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <span class="pill" id="pill-modo"></span>
-    <span class="pill" id="pill-vivo"><span class="dot" id="dot"></span><span id="vivo-txt"></span></span>
+
+<section id="login">
+  <form class="login-card" id="form-login">
+    <div class="marca"><div class="logo">₿</div><h1>Robô Cripto</h1></div>
+    <p>Acesso restrito ao administrador.</p>
+    <label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required>
+    <label for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password" required>
+    <button class="btn btn-primario" type="submit">Entrar</button>
+    <div class="erro" id="erro-login"></div>
+  </form>
+</section>
+
+<div id="app">
+<header><div class="topo">
+  <div class="marca" style="margin:0"><div class="logo">₿</div>
+    <div><h1>Robô Cripto</h1><div class="sub" id="sub">carregando…</div></div></div>
+  <div class="acoes">
+    <span class="pill" id="pill-modo">—</span>
+    <span class="pill"><span class="dot" id="dot"></span><span id="vivo-txt">—</span></span>
+    <button class="btn-pausa" id="btn-pausa" title="Pausar: o robô para de abrir novas compras (continua cuidando das posições abertas)">⏸ Pausar robô</button>
+    <button class="btn-sec" id="btn-sair">Sair</button>
   </div>
-</header>
-<div class="abas" id="abas"></div>
+</div></header>
+
 <main>
+  <div class="abas" id="abas"></div>
   <section class="tiles">
-    <div class="card"><div class="label">Patrimônio</div><div class="valor" id="t-patr">—</div><div class="det" id="t-patr-d"></div></div>
-    <div class="card"><div class="label">Resultado total</div><div class="valor" id="t-res">—</div><div class="det" id="t-res-d"></div></div>
+    <div class="card"><div class="label">Saldo na corretora</div><div class="valor" id="t-patr">—</div><div class="det" id="t-patr-d"></div></div>
+    <div class="card"><div class="label">Resultado</div><div class="valor" id="t-res">—</div><div class="det" id="t-res-d"></div></div>
     <div class="card"><div class="label">Preço atual</div><div class="valor" id="t-preco">—</div><div class="det" id="t-preco-d"></div></div>
     <div class="card"><div class="label">Operações</div><div class="valor" id="t-trades">—</div><div class="det" id="t-trades-d"></div></div>
     <div class="card"><div class="label">Hoje</div><div class="valor" id="t-hoje">—</div><div class="det" id="t-hoje-d"></div></div>
   </section>
+
+  <section class="card"><h2 id="tit-linha">Preço x média — o cruzamento para cima dispara a compra</h2>
+    <div class="chart-box"><canvas id="grafico-linha" aria-label="Preço e média móvel"></canvas></div>
+    <div class="alerta" id="dist-linha">—</div>
+  </section>
+
   <section class="grid2">
-    <div class="card"><h2 id="tit-graf">Patrimônio ao longo do tempo</h2>
-      <div class="chart-box"><canvas id="grafico" aria-label="Gráfico do patrimônio"></canvas></div>
-      <details><summary>Ver como tabela</summary><div id="tab-curva"></div></details>
+    <div class="card"><h2>Patrimônio ao longo do tempo</h2>
+      <div class="chart-box"><canvas id="grafico" aria-label="Patrimônio"></canvas></div>
+      <details><summary>Ver como tabela</summary><div class="tabela-wrap" id="tab-curva"></div></details>
     </div>
     <div class="card"><h2>Posição aberta</h2><div id="posicao"></div></div>
   </section>
-  <section class="card"><h2 id="tit-linha">Preço x média (o cruzamento para cima dispara a compra)</h2>
-    <div class="chart-box"><canvas id="grafico-linha" aria-label="Preço e média móvel"></canvas></div>
-    <div class="det" id="dist-linha" style="margin-top:8px"></div>
-  </section>
-  <section class="card"><h2>Últimas operações</h2><div id="trades"></div></section>
+
+  <section class="card"><h2>Últimas operações</h2><div class="tabela-wrap" id="trades"></div></section>
   <section class="card"><h2>Log do robô</h2><pre id="log"></pre></section>
 </main>
+</div>
+
 <script>
+const CFG = window.PAINEL || {fonte:"local"};
+const BASE = (CFG.url||"").replace(/\/$/,""), K = CFG.anonKey;
 const fmt=(v,d=2)=>v==null||isNaN(v)?"—":Number(v).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d});
 let MOEDA="";
-const din=(v,d=2)=>(MOEDA==="R$"?"R$ "+fmt(v,d):fmt(v,d)+" "+MOEDA);
-const pct=v=>v==null?"—":(v>=0?"+":"")+fmt(v*100,2)+"%";
+const din=(v,d=2)=>v==null||isNaN(v)?"—":(MOEDA==="R$"?"R$ "+fmt(v,d):fmt(v,d)+" "+MOEDA);
+const pct=v=>v==null||isNaN(v)?"—":(v>=0?"+":"")+fmt(v*100,2)+"%";
 const sinal=v=>v>0?"up":v<0?"down":"";
-let grafico, graficoLinha, SEL=null;
-function desenharAbas(lista){
-  const el=document.getElementById("abas"); if(!el) return;
-  el.innerHTML=lista.map(v=>{const r=v.rotulo||v.modo;
-    return `<button class="aba${r===SEL?" ativa":""}" onclick="SEL='${r}';atualizar()">${v.par||""} · ${(v.modo||"").toUpperCase()}</button>`}).join("");
+const $=id=>document.getElementById(id);
+let grafico, graficoLinha, SEL=null, CONTROLE={pausado:false}, TIMER=null;
+
+/* ---------------- sessão (login do Supabase) ---------------- */
+const guarda={get(){try{return JSON.parse(localStorage.getItem("robo_sessao")||"null")}catch(e){return null}},
+  set(v){try{localStorage.setItem("robo_sessao",JSON.stringify(v))}catch(e){}},
+  limpar(){try{localStorage.removeItem("robo_sessao")}catch(e){}}};
+let SESSAO = guarda.get();
+
+async function auth(tipo, corpo){
+  const r = await fetch(`${BASE}/auth/v1/token?grant_type=${tipo}`,{method:"POST",
+    headers:{apikey:K,"Content-Type":"application/json"},body:JSON.stringify(corpo)});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error_description||j.msg||j.error||"Falha no login");
+  SESSAO={access:j.access_token,refresh:j.refresh_token,exp:Date.now()/1000+(j.expires_in||3600)-60};
+  guarda.set(SESSAO);
 }
-const CFG=window.PAINEL||{fonte:"local"};
-async function sb(caminho){
-  const r=await fetch(CFG.url.replace(/\/$/,"")+"/rest/v1/"+caminho,{headers:Object.assign({apikey:CFG.anonKey},CFG.anonKey.startsWith("eyJ")?{Authorization:"Bearer "+CFG.anonKey}:{})});
-  if(!r.ok) throw new Error("Supabase "+r.status); return r.json();
+async function token(){
+  if(!SESSAO) throw new Error("login");
+  if(Date.now()/1000 > SESSAO.exp){
+    try{ await auth("refresh_token",{refresh_token:SESSAO.refresh}); }catch(e){ sair(); throw new Error("login"); }
+  }
+  return SESSAO.access;
+}
+async function sb(caminho, opcoes={}){
+  const t = await token();
+  const r = await fetch(`${BASE}/rest/v1/${caminho}`,{...opcoes,
+    headers:{apikey:K,Authorization:"Bearer "+t,"Content-Type":"application/json",...(opcoes.headers||{})}});
+  if(r.status===401){ sair(); throw new Error("login"); }
+  if(!r.ok) throw new Error("Supabase "+r.status);
+  return r.status===204||opcoes.method==="POST" ? null : r.json();
+}
+function mostrar(tela){ $("login").style.display = tela==="login"?"flex":"none"; $("app").style.display = tela==="app"?"block":"none"; }
+function sair(){ SESSAO=null; guarda.limpar(); clearInterval(TIMER); mostrar("login"); }
+
+$("form-login").addEventListener("submit", async ev=>{
+  ev.preventDefault(); $("erro-login").textContent="";
+  try{ await auth("password",{email:$("email").value.trim(),password:$("senha").value}); $("senha").value=""; iniciar(); }
+  catch(e){ $("erro-login").textContent = e.message.includes("Invalid")?"E-mail ou senha incorretos.":e.message; }
+});
+$("btn-sair").onclick = sair;
+$("btn-pausa").onclick = async ()=>{
+  const novo = !CONTROLE.pausado;
+  if(!confirmarPausa(novo)) return;
+  try{
+    await sb("robo_kv",{method:"POST",headers:{Prefer:"resolution=merge-duplicates"},
+      body:JSON.stringify({chave:"controle",valor:{pausado:novo,em:new Date().toISOString()},atualizado_em:new Date().toISOString()})});
+    CONTROLE.pausado=novo; desenharPausa();
+  }catch(e){ $("vivo-txt").textContent="não consegui salvar: "+e.message; }
+};
+function confirmarPausa(novo){ // confirmação sem pop-up do navegador
+  const b=$("btn-pausa");
+  if(b.dataset.confirmar!=="1"){ b.dataset.confirmar="1"; b.textContent=novo?"Toque de novo p/ pausar":"Toque de novo p/ retomar";
+    setTimeout(()=>{b.dataset.confirmar="";desenharPausa();},4000); return false; }
+  b.dataset.confirmar=""; return true;
+}
+function desenharPausa(){ const b=$("btn-pausa"); b.classList.toggle("pausado",!!CONTROLE.pausado);
+  b.textContent = CONTROLE.pausado ? "▶ Retomar robô" : "⏸ Pausar robô"; }
+
+/* ---------------- dados ---------------- */
+function desenharAbas(lista){
+  $("abas").innerHTML = lista.map(v=>{const r=v.rotulo||v.modo;
+    return `<button class="aba${r===SEL?" ativa":""}" data-r="${r}">${v.par||""} · ${(v.modo||"").toUpperCase()}</button>`}).join("");
+  $("abas").querySelectorAll(".aba").forEach(b=>b.onclick=()=>{SEL=b.dataset.r;atualizar();});
 }
 async function carregarDados(){
   if(CFG.fonte!=="supabase") return (await fetch("/api")).json();
-  // um status por mercado (ex.: real-BTCBRL, paper-ETHBRL)
-  const todos=await sb(`robo_kv?chave=like.*:status&select=chave,valor`);
-  const lista=todos.map(x=>x.valor).filter(v=>v.rotulo)
-    .sort((a,b)=>(a.modo==="real"?0:1)-(b.modo==="real"?0:1) || a.par.localeCompare(b.par));
-  if(!lista.length && todos.length) lista.push(todos[0].valor);
-  if(!SEL || !lista.find(v=>(v.rotulo||v.modo)===SEL)) SEL=lista.length?(lista[0].rotulo||lista[0].modo):(CFG.modo||"paper");
+  const todos = await sb(`robo_kv?or=(chave.like.*:status,chave.eq.controle)&select=chave,valor`);
+  const ctl = todos.find(x=>x.chave==="controle"); CONTROLE = ctl?ctl.valor:{pausado:false};
+  const lista = todos.filter(x=>x.chave!=="controle").map(x=>x.valor).filter(v=>v.rotulo)
+    .sort((a,b)=>(a.modo==="real"?0:1)-(b.modo==="real"?0:1) || (a.par||"").localeCompare(b.par||""));
+  if(!SEL || !lista.find(v=>v.rotulo===SEL)) SEL = lista.length ? lista[0].rotulo : null;
   desenharAbas(lista);
+  if(!SEL) return {config:{modo:"",par:"",timeframe:"",estrategia:"",risco:{}},status:{},resumo:{trades:0},trades:[],curva:[],log:[]};
   const m=SEL;
   const [kv,trades,lucros,curva,logs]=await Promise.all([
     sb(`robo_kv?chave=eq.${m}:status&select=valor`),
@@ -104,83 +209,83 @@ async function carregarDados(){
   const s=kv.length?kv[0].valor:{};
   if(s.atualizado_em) s.segundos_desde_atualizacao=(Date.now()-new Date(s.atualizado_em))/1000;
   const L=lucros.map(x=>+x.lucro), g=L.filter(x=>x>0), p=L.filter(x=>x<=0), sp=Math.abs(p.reduce((a,b)=>a+b,0));
-  return {config:{modo:s.modo||m,par:s.par||"",timeframe:s.timeframe||"",estrategia:s.estrategia||"",
-            risco:s.risco||{max_trades_dia:0,perda_diaria_maxima:0}},
-          status:s, resumo:{trades:L.length,lucro_total:L.reduce((a,b)=>a+b,0),acerto:L.length?g.length/L.length:null,
-            fator_lucro:sp>0?g.reduce((a,b)=>a+b,0)/sp:null},
-          trades, curva:curva.reverse(),
-          log:logs.reverse().map(x=>new Date(x.criado_em).toLocaleString("pt-BR")+" ["+x.nivel+"] "+x.mensagem)};
+  return {config:{modo:s.modo,par:s.par||"",timeframe:s.timeframe||"",estrategia:s.estrategia||"",risco:s.risco||{}},
+    status:s, resumo:{trades:L.length,lucro_total:L.reduce((a,b)=>a+b,0),acerto:L.length?g.length/L.length:null,
+      fator_lucro:sp>0?g.reduce((a,b)=>a+b,0)/sp:null},
+    trades, curva:curva.reverse(),
+    log:logs.reverse().map(x=>new Date(x.criado_em).toLocaleString("pt-BR")+" ["+x.nivel+"] "+x.mensagem)};
 }
 
+const eixo={ticks:{color:"#8f8e86",maxTicksLimit:6},grid:{display:false}};
+const eixoY={ticks:{color:"#8f8e86"},grid:{color:"#262b33"},border:{display:false}};
+
 async function atualizar(){
-  let d; try{ d=await carregarDados(); }catch(e){ document.getElementById("vivo-txt").textContent="painel sem conexão: "+e.message; return; }
-  const c=d.config, s=d.status, r=d.resumo, moeda=(c.par.split("/")[1]||"").replace("BRL","R$"); MOEDA=moeda;
-  document.getElementById("sub").textContent=`${c.par} · ${c.timeframe} · estratégia ${c.estrategia}`;
-  document.getElementById("pill-modo").textContent="Modo "+c.modo.toUpperCase()+(c.modo==="paper"?" (demo)":"");
+  let d; try{ d=await carregarDados(); }catch(e){ if(e.message!=="login") $("vivo-txt").textContent="sem conexão: "+e.message; return; }
+  const c=d.config, s=d.status, r=d.resumo;
+  MOEDA=((c.par||"").split("/")[1]||"").replace("BRL","R$");
+  $("sub").textContent = c.par ? `${c.par} · ${c.timeframe} · estratégia ${c.estrategia}` : "aguardando a primeira execução do robô";
+  $("pill-modo").textContent = c.modo ? "Modo "+c.modo.toUpperCase() : "—";
   const limite=(s.intervalo_esperado_seg||120)*2.5+120, vivo=s.segundos_desde_atualizacao!=null && s.segundos_desde_atualizacao<limite;
-  document.getElementById("dot").style.background=vivo?"var(--good)":"var(--critical)";
-  document.getElementById("vivo-txt").textContent=!s.atualizado_em?"robô ainda não iniciou":vivo?(s.parado?"rodando · PARAR ativo":"robô rodando"):"robô parado há "+Math.round(s.segundos_desde_atualizacao/60)+" min";
+  $("dot").style.background = vivo?"var(--good)":"var(--critical)";
+  $("vivo-txt").textContent = !s.atualizado_em?"sem dados":vivo?(CONTROLE.pausado||s.parado?"rodando · pausado":"robô ativo")
+    :"sem sinal há "+Math.round(s.segundos_desde_atualizacao/60)+" min";
+  desenharPausa();
 
   const ini=s.saldo_inicial;
-  document.getElementById("t-patr").textContent=fmt(s.patrimonio);
-  document.getElementById("t-patr-d").textContent="livre: "+din(s.saldo_livre);
-  const res=ini?(s.patrimonio/ini-1):null, el=document.getElementById("t-res");
-  el.textContent=ini?pct(res):fmt(r.lucro_total); el.className="valor "+sinal(res??r.lucro_total);
-  document.getElementById("t-res-d").textContent=ini?`sobre ${din(ini,0)} iniciais`:"lucro das operações fechadas";
-  document.getElementById("t-preco").textContent=fmt(s.preco);
-  document.getElementById("t-preco-d").textContent=s.atualizado_em?"atualizado "+new Date(s.atualizado_em).toLocaleTimeString("pt-BR"):"";
-  document.getElementById("t-trades").textContent=r.trades;
-  document.getElementById("t-trades-d").textContent=r.trades?`acerto ${fmt(r.acerto*100,0)}% · fator ${r.fator_lucro==null?"—":fmt(r.fator_lucro)}`:"nenhuma ainda";
-  const h=document.getElementById("t-hoje"); h.textContent=fmt(s.pnl_dia); h.className="valor "+sinal(s.pnl_dia);
-  const rr=c.risco||{}; document.getElementById("t-hoje-d").textContent=rr.perda_dia_reais?
-    `total do dia (todos os mercados): ${din(s.pnl_total_dia??s.pnl_dia)} · para em −${din(rr.perda_dia_reais,0)} ou +${din(rr.meta_dia_reais||0,0)}`:
-    `${s.trades_dia??0} de ${rr.max_trades_dia} operações · limite de perda ${fmt((rr.perda_diaria_maxima||0)*100,0)}%`;
+  $("t-patr").textContent=din(s.patrimonio); $("t-patr-d").textContent="livre: "+din(s.saldo_livre)+(c.risco.capital_maximo?` · robô usa até ${din(c.risco.capital_maximo,0)}`:"");
+  const res = ini ? s.patrimonio/ini-1 : r.lucro_total;
+  $("t-res").textContent = ini?pct(res):din(r.lucro_total); $("t-res").className="valor "+sinal(res);
+  $("t-res-d").textContent = ini?`sobre ${din(ini,0)} iniciais`:"soma das operações fechadas";
+  $("t-preco").textContent=din(s.preco); $("t-preco-d").textContent=s.atualizado_em?"atualizado "+new Date(s.atualizado_em).toLocaleTimeString("pt-BR"):"";
+  $("t-trades").textContent=r.trades??0;
+  $("t-trades-d").textContent=r.trades?`acerto ${fmt(r.acerto*100,0)}% · fator ${r.fator_lucro==null?"—":fmt(r.fator_lucro)}`:"nenhuma ainda";
+  const tot = s.pnl_total_dia ?? s.pnl_dia; $("t-hoje").textContent=din(tot); $("t-hoje").className="valor "+sinal(tot);
+  const rr=c.risco||{}; $("t-hoje-d").textContent = rr.perda_dia_reais ? `todos os mercados · para em −${din(rr.perda_dia_reais,0)} ou +${din(rr.meta_dia_reais||0,0)}` : "";
 
-  const p=s.posicao, pd=document.getElementById("posicao");
-  if(!p){ pd.innerHTML='<div class="vazio">Sem posição. O robô está esperando um sinal de compra.</div>'; }
-  else{
-    const atual=p.qtd*s.preco, lucro=atual-p.custo;
-    const linhas=[["Entrada",fmt(p.entrada)],["Quantidade",fmt(p.qtd,6)],["Preço atual",fmt(s.preco)],
-      ["Stop",fmt(p.stop)+` (${pct(p.stop/s.preco-1)})`],["Alvo",p.alvo?fmt(p.alvo):"sem alvo (stop móvel)"],
-      ["Resultado agora",`<span class="${sinal(lucro)}">${din(lucro)} (${pct(lucro/p.custo)})</span>`],
-      ["Aberta em",new Date(p.quando).toLocaleString("pt-BR")]];
-    pd.innerHTML=linhas.map(([a,b])=>`<div class="pos-linha"><span>${a}</span><span>${b}</span></div>`).join("");
-  }
-
-  const td=document.getElementById("trades");
-  td.innerHTML=!d.trades.length?'<div class="vazio">Nenhuma operação fechada ainda. No gráfico de 4h/diário isso pode levar dias.</div>':
-    "<table><tr><th>Saída</th><th>Entrada</th><th>Saída (preço)</th><th>Resultado</th><th>Motivo</th></tr>"+
-    d.trades.map(t=>`<tr><td>${new Date(t.saida_em).toLocaleString("pt-BR")}</td><td>${fmt(+t.preco_entrada)}</td><td>${fmt(+t.preco_saida)}</td><td class="${sinal(+t.lucro)}">${fmt(+t.lucro)}</td><td>${t.motivo}</td></tr>`).join("")+"</table>";
-
-  const pts=d.curva.map(x=>({x:new Date(x.timestamp),y:+x.patrimonio}));
-  if(s.atualizado_em&&s.patrimonio!=null) pts.push({x:new Date(s.atualizado_em),y:s.patrimonio});
-  const labels=pts.map(p=>p.x.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}));
-  const dados=pts.map(p=>p.y);
-  if(!grafico){
-    grafico=new Chart(document.getElementById("grafico"),{type:"line",
-      data:{labels,datasets:[{label:"Patrimônio",data:dados,borderColor:"#3987e5",borderWidth:2,pointRadius:0,pointHitRadius:12,tension:0}]},
-      options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:"index",intersect:false},
-        plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>" "+din(i.parsed.y)}}},
-        scales:{x:{ticks:{color:"#8f8e86",maxTicksLimit:6},grid:{display:false}},
-                y:{ticks:{color:"#8f8e86"},grid:{color:"#2f2f2c"},border:{display:false}}}}});
-  }else{ grafico.data.labels=labels; grafico.data.datasets[0].data=dados; grafico.update(); }
-  document.getElementById("tab-curva").innerHTML="<table><tr><th>Quando</th><th>Patrimônio</th></tr>"+
-    pts.slice(-20).reverse().map((p,i)=>`<tr><td>${labels[labels.length-1-i]}</td><td>${fmt(p.y)}</td></tr>`).join("")+"</table>";
-
+  // gráfico preço x média
   const gl=s.grafico;
   if(gl && gl.t){
     const ds=[{label:"Preço",data:gl.preco,borderColor:"#3987e5",borderWidth:2,pointRadius:0,pointHitRadius:10,tension:0},
               {label:gl.linha,data:gl.media,borderColor:"#c98500",borderWidth:2,borderDash:[6,4],pointRadius:0,pointHitRadius:10,tension:0}];
     const opts={responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:"index",intersect:false},
       plugins:{legend:{labels:{color:"#c3c2b7",boxWidth:14}},tooltip:{callbacks:{label:i=>" "+i.dataset.label+": "+din(i.parsed.y)}}},
-      scales:{x:{ticks:{color:"#8f8e86",maxTicksLimit:6},grid:{display:false}},y:{ticks:{color:"#8f8e86"},grid:{color:"#2f2f2c"},border:{display:false}}}};
-    if(!graficoLinha) graficoLinha=new Chart(document.getElementById("grafico-linha"),{type:"line",data:{labels:gl.t,datasets:ds},options:opts});
+      scales:{x:eixo,y:eixoY}};
+    if(!graficoLinha) graficoLinha=new Chart($("grafico-linha"),{type:"line",data:{labels:gl.t,datasets:ds},options:opts});
     else{graficoLinha.data.labels=gl.t; graficoLinha.data.datasets=ds; graficoLinha.update();}
     const p=gl.preco.at(-1), m=gl.media.at(-1);
-    document.getElementById("dist-linha").textContent = m ? (p>m ? `Preço ${pct(p/m-1)} ACIMA da ${gl.linha.toLowerCase()} → tendência de alta.`
-      : `Preço ${pct(p/m-1)} abaixo da ${gl.linha.toLowerCase()}. Precisa subir cerca de ${pct(m/p-1)} (até ${din(m)}) para cruzar e o robô comprar.`) : "";
-  } else { document.getElementById("dist-linha").textContent="O gráfico aparece depois do próximo fechamento de candle diário (21h)."; }
-  const lg=document.getElementById("log"); lg.textContent=d.log.join("\n")||"sem log ainda"; lg.scrollTop=lg.scrollHeight;
+    $("dist-linha").textContent = m ? (p>m ? `✅ Preço ${pct(p/m-1)} acima da ${gl.linha.toLowerCase()}: tendência de alta.`
+      : `⏳ Preço ${pct(p/m-1)} abaixo da ${gl.linha.toLowerCase()}. Precisa subir cerca de ${pct(m/p-1)} (até ${din(m)}) para cruzar e o robô comprar.`) : "—";
+  } else $("dist-linha").textContent="O gráfico aparece após a próxima execução do robô.";
+
+  // posição
+  const pos=s.posicao;
+  $("posicao").innerHTML = !pos ? '<div class="vazio">Sem posição. O robô está esperando o sinal de compra.</div>' : (()=>{
+    const atual=pos.qtd*s.preco, lucro=atual-pos.custo;
+    return [["Entrada",din(pos.entrada)],["Quantidade",fmt(pos.qtd,6)],["Preço atual",din(s.preco)],
+      ["Stop",din(pos.stop)+` (${pct(pos.stop/s.preco-1)})`],["Alvo",pos.alvo?din(pos.alvo):"sem alvo (sai ao perder a média)"],
+      ["Resultado agora",`<span class="${sinal(lucro)}">${din(lucro)} (${pct(lucro/pos.custo)})</span>`],
+      ["Aberta em",new Date(pos.quando).toLocaleString("pt-BR")]]
+      .map(([a,b])=>`<div class="linha-pos"><span>${a}</span><span>${b}</span></div>`).join(""); })();
+
+  // operações
+  $("trades").innerHTML = !d.trades.length ? '<div class="vazio">Nenhuma operação fechada ainda.</div>' :
+    "<table><tr><th>Saída</th><th>Entrada</th><th>Saída (preço)</th><th>Resultado</th><th>Motivo</th></tr>"+
+    d.trades.map(t=>`<tr><td>${new Date(t.saida_em).toLocaleString("pt-BR")}</td><td>${din(+t.preco_entrada)}</td><td>${din(+t.preco_saida)}</td><td class="${sinal(+t.lucro)}">${din(+t.lucro)}</td><td>${t.motivo}</td></tr>`).join("")+"</table>";
+
+  // patrimônio
+  const pts=d.curva.map(x=>({x:new Date(x.timestamp),y:+x.patrimonio}));
+  if(s.atualizado_em&&s.patrimonio!=null) pts.push({x:new Date(s.atualizado_em),y:s.patrimonio});
+  const labels=pts.map(p=>p.x.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})), dados=pts.map(p=>p.y);
+  const optsP={responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>" "+din(i.parsed.y)}}},scales:{x:eixo,y:eixoY}};
+  if(!grafico) grafico=new Chart($("grafico"),{type:"line",data:{labels,datasets:[{label:"Patrimônio",data:dados,borderColor:"#3987e5",borderWidth:2,pointRadius:0,pointHitRadius:12,tension:0}]},options:optsP});
+  else{grafico.data.labels=labels; grafico.data.datasets[0].data=dados; grafico.update();}
+  $("tab-curva").innerHTML="<table><tr><th>Quando</th><th>Patrimônio</th></tr>"+pts.slice(-20).reverse().map((p,i)=>`<tr><td>${labels[labels.length-1-i]}</td><td>${din(p.y)}</td></tr>`).join("")+"</table>";
+
+  const lg=$("log"); lg.textContent=d.log.join("\n")||"sem log ainda"; lg.scrollTop=lg.scrollHeight;
 }
-atualizar(); setInterval(atualizar,CFG.fonte==="supabase"?30000:10000);
+function iniciar(){ mostrar("app"); atualizar(); clearInterval(TIMER); TIMER=setInterval(atualizar, CFG.fonte==="supabase"?30000:10000); }
+
+if(CFG.fonte!=="supabase"){ $("btn-sair").style.display="none"; $("btn-pausa").style.display="none"; iniciar(); }
+else if(SESSAO) iniciar(); else mostrar("login");
 </script></body></html>
