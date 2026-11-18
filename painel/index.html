@@ -74,7 +74,10 @@ async function sb(caminho){
 }
 async function carregarDados(){
   if(CFG.fonte!=="supabase") return (await fetch("/api")).json();
-  const m=CFG.modo||"paper";
+  // mostra o modo que atualizou por último (real ou paper)
+  const todos=await sb(`robo_kv?chave=like.*:status&select=chave,valor`);
+  todos.sort((a,b)=>new Date(b.valor.atualizado_em)-new Date(a.valor.atualizado_em));
+  const m=todos.length?todos[0].valor.modo:(CFG.modo||"paper");
   const [kv,trades,lucros,curva,logs]=await Promise.all([
     sb(`robo_kv?chave=eq.${m}:status&select=valor`),
     sb(`robo_trades?modo=eq.${m}&order=id.desc&limit=30`),
