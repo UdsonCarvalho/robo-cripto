@@ -61,6 +61,10 @@
     </div>
     <div class="card"><h2>Posição aberta</h2><div id="posicao"></div></div>
   </section>
+  <section class="card"><h2 id="tit-linha">Preço x média (o cruzamento para cima dispara a compra)</h2>
+    <div class="chart-box"><canvas id="grafico-linha" aria-label="Preço e média móvel"></canvas></div>
+    <div class="det" id="dist-linha" style="margin-top:8px"></div>
+  </section>
   <section class="card"><h2>Últimas operações</h2><div id="trades"></div></section>
   <section class="card"><h2>Log do robô</h2><pre id="log"></pre></section>
 </main>
@@ -70,7 +74,7 @@ let MOEDA="";
 const din=(v,d=2)=>(MOEDA==="R$"?"R$ "+fmt(v,d):fmt(v,d)+" "+MOEDA);
 const pct=v=>v==null?"—":(v>=0?"+":"")+fmt(v*100,2)+"%";
 const sinal=v=>v>0?"up":v<0?"down":"";
-let grafico, SEL=null;
+let grafico, graficoLinha, SEL=null;
 function desenharAbas(lista){
   const el=document.getElementById("abas"); if(!el) return;
   el.innerHTML=lista.map(v=>{const r=v.rotulo||v.modo;
@@ -163,6 +167,19 @@ async function atualizar(){
   document.getElementById("tab-curva").innerHTML="<table><tr><th>Quando</th><th>Patrimônio</th></tr>"+
     pts.slice(-20).reverse().map((p,i)=>`<tr><td>${labels[labels.length-1-i]}</td><td>${fmt(p.y)}</td></tr>`).join("")+"</table>";
 
+  const gl=s.grafico;
+  if(gl && gl.t){
+    const ds=[{label:"Preço",data:gl.preco,borderColor:"#3987e5",borderWidth:2,pointRadius:0,pointHitRadius:10,tension:0},
+              {label:gl.linha,data:gl.media,borderColor:"#c98500",borderWidth:2,borderDash:[6,4],pointRadius:0,pointHitRadius:10,tension:0}];
+    const opts={responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:"index",intersect:false},
+      plugins:{legend:{labels:{color:"#c3c2b7",boxWidth:14}},tooltip:{callbacks:{label:i=>" "+i.dataset.label+": "+din(i.parsed.y)}}},
+      scales:{x:{ticks:{color:"#8f8e86",maxTicksLimit:6},grid:{display:false}},y:{ticks:{color:"#8f8e86"},grid:{color:"#2f2f2c"},border:{display:false}}}};
+    if(!graficoLinha) graficoLinha=new Chart(document.getElementById("grafico-linha"),{type:"line",data:{labels:gl.t,datasets:ds},options:opts});
+    else{graficoLinha.data.labels=gl.t; graficoLinha.data.datasets=ds; graficoLinha.update();}
+    const p=gl.preco.at(-1), m=gl.media.at(-1);
+    document.getElementById("dist-linha").textContent = m ? (p>m ? `Preço ${pct(p/m-1)} ACIMA da ${gl.linha.toLowerCase()} → tendência de alta.`
+      : `Preço ${pct(p/m-1)} abaixo da ${gl.linha.toLowerCase()}. Precisa subir cerca de ${pct(m/p-1)} (até ${din(m)}) para cruzar e o robô comprar.`) : "";
+  } else { document.getElementById("dist-linha").textContent="O gráfico aparece depois do próximo fechamento de candle diário (21h)."; }
   const lg=document.getElementById("log"); lg.textContent=d.log.join("\n")||"sem log ainda"; lg.scrollTop=lg.scrollHeight;
 }
 atualizar(); setInterval(atualizar,CFG.fonte==="supabase"?30000:10000);
