@@ -1,10 +1,10 @@
-"""Testa várias configurações de forma honesta:
+"""Testa várias configurações de forma honesta, em 3 períodos:
 
-  1. TREINO (2022-2023): roda todas as combinações e ordena pelas melhores.
-  2. VALIDAÇÃO (2024-hoje): confere se as melhores do treino continuam boas
-     num período que NÃO foi usado para escolher. É isso que evita o overfitting.
+  1. TREINO (2022-2023): ordena as combinações pelas melhores.
+  2. VALIDAÇÃO (2024-2025): confere num período que NÃO foi usado para escolher.
+  3. TESTE 2026 (até hoje): período final, só para conferir; mercado de baixa.
 
-Só é "aprovada" a configuração que ganha dinheiro nos DOIS períodos.
+Só é "aprovada" a configuração que ganha dinheiro no TREINO e na VALIDAÇÃO.
 A melhor aprovada é salva em config_sugerida.yaml, pronta para o modo paper.
 
 Uso:  py -3.13 otimizar.py
@@ -20,10 +20,11 @@ from backtest import baixar_dados, fonte_dados, metricas, recortar_periodo, roda
 from configuracao import PASTA, carregar_config
 
 TREINO = ("2022-01-01", "2023-12-31")
-VALIDACAO = ("2024-01-01", None)
+VALIDACAO = ("2024-01-01", "2025-12-31")
+TESTE = ("2026-01-01", None)
 BAIXAR_DESDE = "2021-01-01"   # sobra para o aquecimento dos indicadores
 TIMEFRAMES = ["4h", "1d"]
-MIN_TRADES = 10
+MIN_TRADES = 5
 PF_MINIMO = 1.1
 
 
@@ -38,12 +39,23 @@ def grade():
         for n, m, trail, stop in itertools.product([20, 55], [10, 20], [0, 3], [2, 3]):
             yield tf, {"tipo": "rompimento", "rompimento_entrada": n, "rompimento_saida": m,
                        "trailing_atr": trail, "stop_atr": stop, "alvo_atr": 0}
+        for per, (compra, venda), stop in itertools.product([2, 14], [(None, 60), (None, 70)], [2, 3]):
+            compra = 10 if per == 2 else 30
+            yield tf, {"tipo": "reversao_rsi", "rsi_periodo": per, "rsi_compra": compra, "rsi_venda": venda,
+                       "trailing_atr": 0, "stop_atr": stop, "alvo_atr": 0}
+    for n, banda, stop in itertools.product([50, 100, 150, 200], [0.0, 0.02, 0.04], [4, 6]):
+        yield "1d", {"tipo": "tendencia_mm", "mm_periodo": n, "mm_banda": banda,
+                     "trailing_atr": 0, "stop_atr": stop, "alvo_atr": 0}
 
 
 def descrever(tf, p):
     if p["tipo"] == "ema_cruzamento":
         s = f"{tf} EMA {p['ema_rapida']}/{p['ema_lenta']}"
         s += " saiCruz" if p["saida_cruzamento"] else ""
+    elif p["tipo"] == "tendencia_mm":
+        s = f"{tf} MM{p['mm_periodo']} banda{p['mm_banda']:.0%}"
+    elif p["tipo"] == "reversao_rsi":
+        s = f"{tf} RSI{p['rsi_periodo']}<{p['rsi_compra']}>{p['rsi_venda']}"
     else:
         s = f"{tf} Romp {p['rompimento_entrada']}/{p['rompimento_saida']}"
     s += f" stop{p['stop_atr']}"
@@ -71,12 +83,13 @@ def main():
         cfg = copy.deepcopy(base)
         cfg["timeframe"] = tf
         cfg["estrategia"].update(params)
-        t, v = avaliar(dados[tf], cfg, TREINO), avaliar(dados[tf], cfg, VALIDACAO)
+        t, v, x = avaliar(dados[tf], cfg, TREINO), avaliar(dados[tf], cfg, VALIDACAO), avaliar(dados[tf], cfg, TESTE)
         linhas.append({
             "config": descrever(tf, params), "tf": tf, "params": params,
             "treino_ret": t["retorno"], "treino_pf": t["fator_lucro"], "treino_trades": t["trades"], "treino_dd": t["drawdown"],
             "valid_ret": v["retorno"], "valid_pf": v["fator_lucro"], "valid_trades": v["trades"], "valid_dd": v["drawdown"],
-            "bh_treino": t["buy_hold"], "bh_valid": v["buy_hold"],
+            "teste_ret": x["retorno"], "teste_trades": x["trades"], "teste_dd": x["drawdown"],
+            "bh_treino": t["buy_hold"], "bh_valid": v["buy_hold"], "bh_teste": x["buy_hold"],
         })
         if n % 20 == 0:
             print(f"  {n}/{len(combinacoes)}")
@@ -90,14 +103,20 @@ def main():
     os.makedirs(os.path.join(PASTA, "resultados"), exist_ok=True)
     res.drop(columns="params").to_csv(os.path.join(PASTA, "resultados", "otimizacao.csv"), index=False)
 
-    bh_t, bh_v = res["bh_treino"].iloc[0], res["bh_valid"].iloc[0]
-    print("\nTOP 15 NO TREINO (2022-23) e como foram na VALIDAÇÃO (2024-hoje)")
-    print(f"Só comprar e segurar: treino {bh_t:+.1%} | validação {bh_v:+.1%}\n")
-    print(f"{'configuração':<36}{'trein%':>8}{'PF':>6}{'n':>5}  |{'valid%':>8}{'PF':>6}{'n':>5}{'DD':>8}  ok")
-    for _, r in ranking.head(15).iterrows():
-        print(f"{r['config']:<36}{r['treino_ret']:>+8.1%}{r['treino_pf']:>6.2f}{r['treino_trades']:>5}  |"
-              f"{r['valid_ret']:>+8.1%}{r['valid_pf']:>6.2f}{r['valid_trades']:>5}{r['valid_dd']:>8.1%}  "
-              f"{'SIM' if r['aprovada'] else '-'}")
+    bh_t, bh_v, bh_x = res["bh_treino"].iloc[0], res["bh_valid"].iloc[0], res["bh_teste"].iloc[0]
+    def tabela(titulo, df):
+        print(f"\n{titulo}")
+        print(f"{'configuração':<34}{'trein%':>8}{'PF':>6}{'n':>4} |{'valid%':>8}{'PF':>6}{'n':>4}{'DD':>7} |{'2026%':>8}{'n':>4}{'DD':>7}  ok")
+        for _, r in df.iterrows():
+            print(f"{r['config']:<34}{r['treino_ret']:>+8.1%}{r['treino_pf']:>6.2f}{r['treino_trades']:>4} |"
+                  f"{r['valid_ret']:>+8.1%}{r['valid_pf']:>6.2f}{r['valid_trades']:>4}{r['valid_dd']:>7.1%} |"
+                  f"{r['teste_ret']:>+8.1%}{r['teste_trades']:>4}{r['teste_dd']:>7.1%}  {'SIM' if r['aprovada'] else '-'}")
+    print(f"\nSó comprar e segurar: treino {bh_t:+.1%} | validação {bh_v:+.1%} | 2026 {bh_x:+.1%}")
+    tabela("TOP 15 NO TREINO (2022-23), com validação (2024-25) e 2026:", ranking.head(15))
+    for tipo in ("tendencia_mm", "reversao_rsi"):
+        sub = ranking[ranking["params"].apply(lambda p: p["tipo"] == tipo)].head(5)
+        if len(sub):
+            tabela(f"MELHORES DO TIPO {tipo}:", sub)
 
     aprovadas = ranking[ranking["aprovada"]]
     print(f"\nAprovadas (lucro e PF >= {PF_MINIMO} nos dois períodos): {len(aprovadas)} de {len(res)}")

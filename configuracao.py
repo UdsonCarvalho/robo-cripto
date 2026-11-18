@@ -28,8 +28,8 @@ def validar(cfg):
     if not 0 < r["perda_diaria_maxima"] <= 0.10:
         erros.append("perda_diaria_maxima deve ficar entre 0 e 0.10")
     e = cfg["estrategia"]
-    if e.get("tipo") not in ("ema_cruzamento", "rompimento"):
-        erros.append("estrategia.tipo deve ser ema_cruzamento ou rompimento")
+    if e.get("tipo") not in ("ema_cruzamento", "rompimento", "tendencia_mm", "reversao_rsi"):
+        erros.append("estrategia.tipo deve ser ema_cruzamento, rompimento, tendencia_mm ou reversao_rsi")
     elif e["tipo"] == "ema_cruzamento" and not e["ema_rapida"] < e["ema_lenta"]:
         erros.append("ema_rapida precisa ser menor que ema_lenta")
     if e["stop_atr"] <= 0 or e["alvo_atr"] < 0 or e.get("trailing_atr", 0) < 0:

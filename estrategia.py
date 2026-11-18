@@ -8,7 +8,15 @@ tipo: rompimento  (seguidor de tendência clássico, "canal de Donchian")
   Compra quando o fechamento rompe a máxima dos últimos N candles, com preço acima da
   EMA de tendência. Sai quando o fechamento perde a mínima dos últimos M candles.
 
-Nos dois: stop inicial = entrada - stop_atr x ATR; alvo opcional (alvo_atr = 0 desliga);
+tipo: tendencia_mm  (filtro de tendência de longo prazo, poucas operações)
+  Fica comprado enquanto o fechamento está acima da média móvel simples de N candles
+  (com uma banda para evitar entra-e-sai) e vai para o caixa quando perde a média.
+
+tipo: reversao_rsi  (compra correções dentro de tendência de alta)
+  Compra quando o RSI cai abaixo de rsi_compra com o preço acima da média de tendência
+  e vende quando o RSI volta acima de rsi_venda.
+
+Em todos: stop inicial = entrada - stop_atr x ATR; alvo opcional (alvo_atr = 0 desliga);
 trailing stop opcional (trailing_atr = 0 desliga) que sobe junto com o preço e nunca desce.
 """
 import numpy as np
@@ -39,7 +47,7 @@ def atr(df, periodo=14):
 
 def aquecimento(cfg_est):
     """Candles descartados no início até os indicadores estabilizarem."""
-    return max(cfg_est["ema_tendencia"], cfg_est.get("rompimento_entrada", 0)) + 50
+    return max(cfg_est["ema_tendencia"], cfg_est.get("rompimento_entrada", 0), cfg_est.get("mm_periodo", 0)) + 50
 
 
 def calcular_indicadores(df, cfg_est):
@@ -67,6 +75,18 @@ def calcular_indicadores(df, cfg_est):
         df["canal_max"], df["canal_min"] = maxima, minima
         df["entrada"] = (df["close"] > maxima) & tendencia_ok
         df["saida"] = df["close"] < minima
+    elif cfg_est["tipo"] == "tendencia_mm":
+        mm = df["close"].rolling(cfg_est.get("mm_periodo", 200)).mean()
+        banda = cfg_est.get("mm_banda", 0.0)
+        df["mm"] = mm
+        df["entrada"] = df["close"] > mm * (1 + banda)
+        df["saida"] = df["close"] < mm * (1 - banda)
+
+    elif cfg_est["tipo"] == "reversao_rsi":
+        df["rsi"] = rsi(df["close"], cfg_est.get("rsi_periodo", 14))
+        df["entrada"] = (df["rsi"] < cfg_est.get("rsi_compra", 30)) & tendencia_ok
+        df["saida"] = df["rsi"] > cfg_est.get("rsi_venda", 60)
+
     else:
         raise ValueError(f"tipo de estratégia desconhecido: {cfg_est['tipo']}")
 
