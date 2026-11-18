@@ -12,7 +12,7 @@ exchange: foxbit      # foxbit | mercado | okx | binance | ... (corretoras supor
 modo: paper
 
 par: BTC/BRL           # opera direto em reais
-timeframe: 4h
+timeframe: 1d
 
 # Histórico usado pelo backtest/otimizador (só dados públicos, não precisa de conta).
 # A Foxbit tem pouco histórico pela API, então testamos com o BTC/USDT da OKX (anos de dados).
@@ -21,12 +21,15 @@ dados:
   par: BTC/USDT
 
 estrategia:
-  tipo: rompimento          # ema_cruzamento | rompimento
+  # Aprovada no otimizador (treino 2022-23 e validação 2024-25): tendência pela média de 150 dias.
+  tipo: tendencia_mm        # tendencia_mm | rompimento | ema_cruzamento | reversao_rsi
+  mm_periodo: 150           # comprado acima da média de 150 dias, caixa abaixo dela
+  mm_banda: 0.0
   ema_tendencia: 200        # só compra acima dessa média
   atr_periodo: 14
-  stop_atr: 3.0             # stop inicial = entrada - 3 x ATR
+  stop_atr: 6.0             # stop de segurança largo = entrada - 6 x ATR
   alvo_atr: 0               # 0 = sem alvo fixo (deixa o lucro correr)
-  trailing_atr: 3.0         # stop móvel: acompanha o preço a 3 x ATR (0 = desliga)
+  trailing_atr: 0           # stop móvel desligado (a saída é perder a média)
   # --- usado só no tipo rompimento
   rompimento_entrada: 55    # compra ao romper a máxima dos últimos 55 candles
   rompimento_saida: 20      # sai ao perder a mínima dos últimos 20 candles
