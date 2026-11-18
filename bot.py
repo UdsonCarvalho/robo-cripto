@@ -159,7 +159,13 @@ class Robo:
         }
 
     def pausado(self):
-        return os.path.exists(ARQ_PARAR) or bool(self.cfg["bot"].get("pausado"))
+        if os.path.exists(ARQ_PARAR) or self.cfg["bot"].get("pausado"):
+            return True
+        try:  # botão "Pausar" do painel admin
+            controle = self.arm.ler_global("controle") or {}
+            return bool(controle.get("pausado"))
+        except Exception:
+            return False
 
     def salvar(self):
         self.arm.gravar("estado", self.estado)

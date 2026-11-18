@@ -41,6 +41,9 @@ class ArmazenamentoLocal:
         with open(caminho, encoding="utf-8") as f:
             return json.load(f)
 
+    def ler_global(self, chave):
+        return None
+
     def gravar(self, chave, valor):
         caminho = self.arquivos_kv[chave]
         tmp = caminho + ".tmp"
@@ -96,6 +99,14 @@ class ArmazenamentoSupabase:
     def ler(self, chave):
         r = self.req.get(f"{self.base}/robo_kv", headers=self.cab, timeout=20,
                          params={"chave": f"eq.{self.modo}:{chave}", "select": "valor"})
+        r.raise_for_status()
+        dados = r.json()
+        return dados[0]["valor"] if dados else None
+
+    def ler_global(self, chave):
+        """Chave sem prefixo de modo (ex.: 'controle', gravada pelo painel admin)."""
+        r = self.req.get(f"{self.base}/robo_kv", headers=self.cab, timeout=20,
+                         params={"chave": f"eq.{chave}", "select": "valor"})
         r.raise_for_status()
         dados = r.json()
         return dados[0]["valor"] if dados else None
