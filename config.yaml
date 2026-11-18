@@ -45,7 +45,7 @@ risco:
   exposicao_maxima: 0.90     # pode usar até 90% do capital numa posição
   perda_diaria_maxima: 0.03  # perdeu 3% no dia -> para de abrir operações até amanhã
   max_trades_dia: 3
-  capital_maximo: 0          # teto de dinheiro que o robô pode usar (0 = sem teto). Use no modo real!
+  capital_maximo: 20         # teto de dinheiro que o robô pode usar (0 = sem teto). R$ 20 no modo real.
 
 custos:
   taxa: 0.005       # 0,5% por ordem a mercado (taxa "taker" padrão da Foxbit; confira a sua no app)
