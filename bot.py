@@ -234,6 +234,7 @@ class Robo:
             "t": [ts.strftime("%Y-%m-%d") for ts in ult.index],
             "preco": [round(float(x), 2) for x in ult["close"]],
             "media": [None if pd.isna(x) else round(float(x), 2) for x in ult[col]],
+            "banda": float(self.est.get("mm_banda", 0.0)) if col == "mm" else 0.0,
         }
 
     # ---------- ordens
@@ -296,7 +297,7 @@ class Robo:
         tf = self.corretora.tf_ms
         ultimo_fechado = int(agora.timestamp() * 1000) // tf * tf - tf
         if ultimo_fechado <= self.estado["ultimo_candle"]:
-            if not self.estado.get("grafico"):  # primeira vez: monta o gráfico sem reprocessar sinais
+            if not self.estado.get("grafico") or "banda" not in self.estado["grafico"]:  # monta/atualiza o gráfico sem reprocessar sinais
                 self._guardar_grafico(calcular_indicadores(self.corretora.candles_fechados(), self.est))
             return
         df = calcular_indicadores(self.corretora.candles_fechados(), self.est)
