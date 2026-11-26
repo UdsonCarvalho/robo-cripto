@@ -29,10 +29,10 @@ dados:
   par: BTC/USDT
 
 estrategia:
-  # Aprovada no otimizador (treino 2022-23 e validação 2024-25): tendência pela média de 150 dias.
+  # Aprovada no otimizador (treino 2022-23 e validação 2024-25, BTC e ETH): média de 50 dias com margem de 2%.
   tipo: tendencia_mm        # tendencia_mm | rompimento | ema_cruzamento | reversao_rsi
-  mm_periodo: 150           # comprado acima da média de 150 dias, caixa abaixo dela
-  mm_banda: 0.0
+  mm_periodo: 50            # comprado acima da média de 50 dias (com margem), caixa abaixo dela
+  mm_banda: 0.02            # margem de 2%: compra 2% acima da média, vende 2% abaixo
   ema_tendencia: 200        # só compra acima dessa média
   atr_periodo: 14
   stop_atr: 6.0             # stop de segurança largo = entrada - 6 x ATR
