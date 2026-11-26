@@ -275,14 +275,23 @@ async function atualizar(){
   if(gl && gl.t){
     const ds=[{label:"Preço",data:gl.preco,borderColor:"#3987e5",borderWidth:2,pointRadius:0,pointHitRadius:10,tension:0},
               {label:gl.linha,data:gl.media,borderColor:"#c98500",borderWidth:2,borderDash:[6,4],pointRadius:0,pointHitRadius:10,tension:0}];
+    const bd=gl.banda||0;
+    if(bd>0){
+      ds.push({label:`Compra (+${fmt(bd*100,0)}%)`,data:gl.media.map(x=>x==null?null:x*(1+bd)),borderColor:"#2e9e5b",borderWidth:1.5,borderDash:[2,3],pointRadius:0,pointHitRadius:10,tension:0});
+      ds.push({label:`Venda (−${fmt(bd*100,0)}%)`,data:gl.media.map(x=>x==null?null:x*(1-bd)),borderColor:"#d4513d",borderWidth:1.5,borderDash:[2,3],pointRadius:0,pointHitRadius:10,tension:0});
+    }
     const opts={responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:"index",intersect:false},
       plugins:{legend:{labels:{color:"#c3c2b7",boxWidth:14}},tooltip:{callbacks:{label:i=>" "+i.dataset.label+": "+din(i.parsed.y)}}},
       scales:{x:eixo,y:eixoY}};
     if(!graficoLinha) graficoLinha=new Chart($("grafico-linha"),{type:"line",data:{labels:gl.t,datasets:ds},options:opts});
     else{graficoLinha.data.labels=gl.t; graficoLinha.data.datasets=ds; graficoLinha.update();}
     const p=gl.preco.at(-1), m=gl.media.at(-1);
-    $("dist-linha").textContent = m ? (p>m ? `✅ Preço ${pct(p/m-1)} acima da ${gl.linha.toLowerCase()}: tendência de alta.`
-      : `⏳ Preço ${pct(p/m-1)} abaixo da ${gl.linha.toLowerCase()}. Precisa subir cerca de ${pct(m/p-1)} (até ${din(m)}) para cruzar e o robô comprar.`) : "—";
+    const compra=m*(1+bd), venda=m*(1-bd), lin=gl.linha.toLowerCase();
+    $("dist-linha").textContent = !m ? "—" : (s.posicao
+      ? (p>venda ? `✅ Comprado. Preço ${pct(p/m-1)} em relação à ${lin}. Vende se fechar o dia abaixo de ${din(venda)}.`
+                 : `⚠️ Preço abaixo de ${din(venda)}: o robô vende no fechamento do dia (21h).`)
+      : (p>=compra ? `✅ Preço acima de ${din(compra)} (${lin} +${fmt(bd*100,0)}%). Se fechar o dia assim, o robô compra às 21h.`
+                   : `⏳ Preço ${pct(p/m-1)} em relação à ${lin}. Precisa subir ${pct(compra/p-1)} (até ${din(compra)}) e fechar o dia acima disso para o robô comprar.`));
   } else $("dist-linha").textContent="O gráfico aparece após a próxima execução do robô.";
 
   // posição
