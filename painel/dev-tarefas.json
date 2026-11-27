@@ -1,5 +1,5 @@
 {
-  "atualizado_em": "2026-11-27T18:15:00Z",
+  "atualizado_em": "2026-11-27T18:25:00Z",
   "cidade": "Coins RJ Roleplay",
   "base": "Qbox (qbx_core) via txAdmin",
   "equipe": [
@@ -156,9 +156,10 @@
       "id": "concessionaria",
       "setor": "Carros",
       "titulo": "Concessionária e preços em R$ (qbx_vehicleshop)",
-      "status": "fazendo",
+      "status": "testar",
       "dono": "Téo",
-      "detalhe": "Pacote 2: lojas Coins Motors, Coins Prime, Marina e Hangar. Falta revisar os preços em R$ com a tabela da economia."
+      "detalhe": "Pacotes 2 e 6: Coins Motors com vitrine nacional e preços da frota em R$. Testar comprando a Moto 160.",
+      "precisa_silva": true
     },
     {
       "id": "garagens",
@@ -172,10 +173,11 @@
     {
       "id": "carros-br",
       "setor": "Carros",
-      "titulo": "Carros brasileiros (addon)",
-      "status": "afazer",
+      "titulo": "Carros brasileiros (frota nacional + addon)",
+      "status": "testar",
       "dono": "Téo",
-      "detalhe": "Gol, Uno, HB20, motos de entrega; só modelos com permissão para FiveM."
+      "detalhe": "Pacote 6: 17 veículos com nome brasileiro e preço em R$ na aba Nacionais (BR) e pasta coins_carros_br pronta para modelos addon com permissão.",
+      "precisa_silva": true
     },
     {
       "id": "economia",
