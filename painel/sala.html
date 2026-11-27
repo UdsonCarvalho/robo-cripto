@@ -134,7 +134,7 @@ table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-bl
   </div>
   <aside class="col">
     <div class="card" id="panel"></div>
-    <div class="card" id="labCard"><h3>Laboratório de estratégias</h3><div class="sub">Lia (0h–8h), Davi (8h–16h) e Nina (16h–24h) só testam. Nenhum deles opera.</div><div id="lab"></div></div>
+    <div class="card" id="labCard"><h3>Laboratório de estratégias</h3><div class="sub">Lia (0h–8h), Davi, Bia e Léo (8h–16h) e Nina (16h–24h) só testam, com café, almoço e descanso. Nenhum deles opera.</div><div id="lab"></div></div>
     <div class="card"><h3>Quadro de ganhos e perdas</h3><div class="sub">Operações de hoje e saldo dos últimos 7 dias</div><div id="quadro"></div></div>
     <div class="card"><h3>Pronto para operar?</h3><div class="sub">Conferido com os dados que o robô gravou</div><ul class="check" id="check"></ul></div>
     <div class="card"><h3>Log do robô</h3><div class="sub">Últimas mensagens gravadas na tabela robo_log</div><ul class="feed" id="feed"></ul></div>
@@ -229,8 +229,15 @@ const RX=11,RY=8.5;
 const LOOK={BTC:{shirt:'#e39b2d',hair:'#2a1c14',skin:'#c98d63'},ETH:{shirt:'#6f86e0',hair:'#151515',skin:'#e0b08a'}};
 const LOOKX=[{shirt:'#3fae8a',hair:'#3b2416',skin:'#a8714f'},{shirt:'#c2577a',hair:'#1d1d1d',skin:'#f0c8a6'}];
 const SLOTS=[[1.5,3.1],[5.3,3.1],[1.5,5.7],[5.3,5.7]];
-const LABDESK=[1.5,5.8],LABHOME=[2.55,7.0];
-const TESTERS=[{nome:'Lia',ini:0,fim:8,look:{shirt:'#b58cf0',hair:'#5a2e1c',skin:'#e6b48f'}},{nome:'Davi',ini:8,fim:16,look:{shirt:'#4fb6a0',hair:'#1b1b1b',skin:'#8d5a3b'}},{nome:'Nina',ini:16,fim:24,look:{shirt:'#e0687e',hair:'#2b2018',skin:'#f1c7a3'}}];
+const LABDESK=[1.5,5.8],LABHOME=[2.55,7.0],LABDESK2=[4.9,5.8],LABSEATS2=[[5.45,7.0],[6.65,7.0]];
+// turnos: Lia 0h–8h; Davi, Bia e Léo 8h–16h; Nina 16h–24h. café = minuto da pausa; pausa = [início, fim] em minutos do dia
+const TESTERS=[
+ {nome:'Lia',ini:0,fim:8,seat:LABHOME,meal:[8.85,7.1],cafe:50,pausa:[180,210],pausaTxt:'lanche da madrugada',look:{shirt:'#b58cf0',hair:'#5a2e1c',skin:'#e6b48f'}},
+ {nome:'Davi',ini:8,fim:16,seat:LABHOME,meal:[8.85,7.1],cafe:50,pausa:[720,780],pausaTxt:'almoço (12h–13h)',look:{shirt:'#4fb6a0',hair:'#1b1b1b',skin:'#8d5a3b'}},
+ {nome:'Bia',ini:8,fim:16,seat:LABSEATS2[0],meal:[9.55,7.7],cafe:35,pausa:[780,840],pausaTxt:'almoço (13h–14h)',look:{shirt:'#f0a35e',hair:'#7a3b1e',skin:'#d9a07a'}},
+ {nome:'Léo',ini:8,fim:16,seat:LABSEATS2[1],meal:[7.95,7.1],cafe:5,pausa:[690,750],pausaTxt:'almoço (11h30–12h30)',look:{shirt:'#5d8fe0',hair:'#3a2a1a',skin:'#f0c39c'}},
+ {nome:'Nina',ini:16,fim:24,seat:LABHOME,meal:[8.85,7.1],cafe:50,pausa:[1200,1230],pausaTxt:'jantar (20h–20h30)',look:{shirt:'#e0687e',hair:'#2b2018',skin:'#f1c7a3'}}];
+const CAFE_SPOTS=[[.7,1.25],[1.25,1.3],[1.8,1.25],[2.35,1.3]],MEAL_SPOTS=[[8.05,6.4],[9.4,6.95],[7.85,5.0]];
 const WALLS=[{t:()=>onY(.5,0,2.3),w:5.9,h:1.7},{t:()=>onXr(5.7,2.25),w:4.9,h:1.65}];
 function sky(){const h=new Date().getHours()+new Date().getMinutes()/60;
  if(h>=7&&h<17)return {top:'#7fb6e0',bot:'#d8ebf6',city:'#8ea3b4',win:'#e9eef2',lit:0,spill:.07};
@@ -309,10 +316,14 @@ function buildRoom(){const key=ORDER.join(',');if(built===key)return;built=key;
   st2+=box(x+.06,y+.06,.06,.06,.42,leg)+box(x+w-.6,y+.08,.52,.62,.4,['#4d3f33','#3a2f26','#43372c'])+box(x+.06,y+d-.12,.06,.06,.42,leg)+box(x,y,w,d,.05,['#6d5c4b','#4f4236','#5f5041'],.42);
   for(let j=0;j<3;j++){const mx=x+.14+j*.68;st2+=box(mx+.24,y+.1,.12,.12,.02,monC,.47)+box(mx+.28,y+.12,.04,.04,.1,monC,.47)+box(mx,y+.08,.6,.05,.4,monC,.55)+`<g transform="${onY(mx+.03,y+.13,.92)}"><rect width=".54" height=".34" fill="#071010" stroke="#b58cf0" stroke-width=".012"/><g id="lab-${j}"></g></g>`}
   st2+=box(x+.62,y+.44,.82,.2,.025,['#2a2d30','#1a1c1e','#222528'],.47)+box(x+1.9,y+.4,.11,.11,.13,['#f2efe9','#c9c3b8','#ddd7cc'],.47);
+  {const [x2,y2]=LABDESK2;st2+=quad([P(x2-.08,y2-.02),P(x2+w+.12,y2-.02),P(x2+w+.12,y2+d+.14),P(x2-.08,y2+d+.14)],'#000','opacity=".5" filter="url(#shadow)"')+box(x2+.06,y2+.06,.06,.06,.42,leg)+box(x2+w-.12,y2+.06,.06,.06,.42,leg)+box(x2+.06,y2+d-.12,.06,.06,.42,leg)+box(x2+w-.12,y2+d-.12,.06,.06,.42,leg)+box(x2,y2,w,d,.05,['#6d5c4b','#4f4236','#5f5041'],.42);
+   for(let j=0;j<3;j++){const mx=x2+.14+j*.68;st2+=box(mx+.24,y2+.1,.12,.12,.02,monC,.47)+box(mx+.28,y2+.12,.04,.04,.1,monC,.47)+box(mx,y2+.08,.6,.05,.4,monC,.55)+`<g transform="${onY(mx+.03,y2+.13,.92)}"><rect width=".54" height=".34" fill="#071010" stroke="#b58cf0" stroke-width=".012"/><g id="lab2-${j}"></g></g>`}
+   st2+=box(x2+.3,y2+.44,.7,.2,.025,['#2a2d30','#1a1c1e','#222528'],.47)+box(x2+1.4,y2+.44,.7,.2,.025,['#2a2d30','#1a1c1e','#222528'],.47);
+   LABSEATS2.forEach(([a,b])=>{const [cx2,cy2]=P(a,b);st2+=`<g transform="translate(${cx2.toFixed(1)},${cy2.toFixed(1)})"><ellipse cx="0" cy="-2" rx="10" ry="3.4" fill="#26292c"/><rect x="-1.6" y="-15" width="3.2" height="13" fill="#3a3e42"/><ellipse cx="0" cy="-16" rx="13" ry="5" fill="#2b2f33"/><rect x="-11.5" y="-31" width="23" height="15" rx="5" fill="#23272b"/></g>`})}
   const [ta,tb]=P(x+1.1,y+.95);st2+=`<text x="${ta}" y="${tb+30}" fill="#8f79b8" font-size="10" text-anchor="middle" letter-spacing=".08em">LABORATÓRIO</text>`;
   const [cx,cy]=P(LABHOME[0],LABHOME[1]);st2+=`<g transform="translate(${cx.toFixed(1)},${cy.toFixed(1)})"><ellipse cx="0" cy="-2" rx="10" ry="3.4" fill="#26292c"/><rect x="-1.6" y="-15" width="3.2" height="13" fill="#3a3e42"/><ellipse cx="0" cy="-16" rx="13" ry="5" fill="#2b2f33"/><rect x="-11.5" y="-31" width="23" height="15" rx="5" fill="#23272b"/></g>`;
   $('static').insertAdjacentHTML('beforeend',st2);
-  TESTERS.forEach(t=>{const g=pessoa('LAB-'+t.nome,t.nome,t.look,'Testador '+t.nome);g.classList.add('tester');g.dataset.lab=t.nome;g.style.display='none';t.at=null;bg.appendChild(g)})}
+  TESTERS.forEach(t=>{const g=pessoa('LAB-'+t.nome,t.nome,t.look,'Testador '+t.nome);g.classList.add('tester');g.dataset.lab=t.nome;{const r=g.querySelector('.tag rect'),tw=t.nome.length*7+34;r.setAttribute('height','22');r.setAttribute('width',tw);r.setAttribute('x',-tw/2);g.querySelector('.tag circle').setAttribute('cx',-tw/2+11);g.querySelector('.tag text').setAttribute('x','5');g.querySelector('.st').style.display='none';const ti=document.createElementNS(NS,'title');g.appendChild(ti)}g.style.display='none';t.at=null;bg.appendChild(g)})}
  $('static').insertAdjacentHTML('beforeend',chairs)}
 
 function pessoa(k,name,L,label){const g=document.createElementNS(NS,'g');g.setAttribute('class','bot');g.dataset.k=k;g.dataset.pose='sit';g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label',label);
@@ -346,7 +357,7 @@ function atividade(m,n){const f=faseAgora(m),t=agoraBR()%60;
  if(f==='almoco')return {spot:'almoco',pose:'stand',item:'plate',txt:'almoçando (volta às 13h)'};
  const c0=(25+n*20)%60;if(t>=c0&&t<c0+5)return {spot:'cafe',pose:'stand',item:'mug',txt:'pausa para o café'};
  return {spot:'mesa',pose:'sit',txt:'vigiando o cruzamento',type:true}}
-function spotXY(m,n,spot){return spot==='mesa'?m.home:spot==='cafe'?[.7+n*.55,1.25]:spot==='almoco'?[[8.05,5.5],[8.9,6.95],[8.05,6.4],[9.4,6.95]][n%4]:[10.15,5.55+n*.95]}
+function spotXY(m,n,spot){return spot==='mesa'?m.home:spot==='cafe'?[.7+n*.55,1.25]:spot==='almoco'?[[7.95,5.25],[7.95,6.2],[9.0,4.8],[8.6,4.6]][n%4]:[10.15,5.55+n*.95]}
 function moveOps(){ORDER.slice(0,4).forEach((k,n)=>{const m=MK[k],g=document.querySelector(`.bot[data-k="${k}"]`);if(!g||!m.home)return;const a=atividade(m,n),xy=spotXY(m,n,a.spot),mv=g.querySelector('.mv');
   const [x,y]=P(xy[0],xy[1]);const alvo=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;m.xy=xy;
   const flip=a.spot==='sofa'?' scale(-1,1)':'';
@@ -354,18 +365,22 @@ function moveOps(){ORDER.slice(0,4).forEach((k,n)=>{const m=MK[k],g=document.que
    if(!primeira){g.dataset.pose='walk';clearTimeout(m.tw);m.tw=setTimeout(()=>{g.dataset.pose=a.pose;mv.style.transform=flip},3100)}else{g.dataset.pose=a.pose;mv.style.transform=flip}}
   else if(g.dataset.pose!=='walk'){g.dataset.pose=a.pose;mv.style.transform=flip}
   g.dataset.item=a.item||'';g.classList.toggle('idle',!a.type);
-  g.querySelector('.st').textContent=a.txt;g.querySelector('.tag').setAttribute('transform',`translate(0,${-90-(a.spot!=='mesa'?n*40:0)})${flip}`)});
+  g.querySelector('.st').textContent=a.txt;g.querySelector('.tag').setAttribute('transform',`translate(${a.spot!=='mesa'?(n%2?70:-70):0},-90)${flip}`)});
  }
-function moveLab(){const h=Math.floor(agoraBR()/60),mn=agoraBR()%60;
- TESTERS.forEach(t=>{const g=document.querySelector(`.bot[data-lab="${t.nome}"]`);if(!g)return;const on=h>=t.ini&&h<t.fim;g.style.display=on?'':'none';if(!on){t.at=null;return}
-  const cafe=mn>=50&&mn<55,spot=cafe?'cafe':'mesa',xy=cafe?[1.85,1.25]:LABHOME,[x,y]=P(xy[0],xy[1]),mv=g.querySelector('.mv');t.xy=xy;
-  if(t.at!==spot){const first=t.at===null;t.at=spot;g.style.transition=first?'none':'';g.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;if(!first){g.dataset.pose='walk';clearTimeout(t.tw);t.tw=setTimeout(()=>{g.dataset.pose=cafe?'stand':'sit'},3100)}else g.dataset.pose=cafe?'stand':'sit'}
-  g.dataset.item=cafe?'mug':'';g.setAttribute('class','bot tester lab'+(mk==='LAB'?' sel':''));
-  const n=LAB?LAB.testadas_unicas:0;g.querySelector('.st').textContent=cafe?`turno ${t.ini}h–${t.fim}h · café`:`turno ${t.ini}h–${t.fim}h · ${LAB?n.toLocaleString('pt-BR')+' testadas':'testando'}`});
- const lab=[0,1,2].map(j=>$('lab-'+j));if(lab[0]&&LAB){const pr=LAB.grade_total?LAB.cursor/LAB.grade_total:0;
-  lab[0].innerHTML=`<rect x=".04" y=".05" width=".46" height=".05" rx=".02" fill="#fff" opacity=".12"/><rect x=".04" y=".05" width="${(.46*pr).toFixed(3)}" height=".05" rx=".02" fill="#b58cf0"/>`+[.15,.2,.25].map((y,i)=>`<rect x=".04" y="${y}" width="${[.42,.3,.36][i]}" height=".022" fill="#fff" opacity=".22"/>`).join('');
-  const rk=(LAB.ranking||[]).slice(0,5);lab[1].innerHTML=rk.map((r,i)=>`<rect x=".04" y="${(.04+i*.058).toFixed(3)}" width="${Math.max(.02,Math.min(.44,(r.valid&&r.valid.ret||0)*.44+.05)).toFixed(3)}" height=".036" fill="${r.forte?'#3ecf8e':'#b58cf0'}"/>`).join('')||'<rect x=".04" y=".15" width=".44" height=".03" fill="#fff" opacity=".15"/>';
-  lab[2].innerHTML=`<text x=".04" y=".14" font-size=".09" fill="#b58cf0">${LAB.aprovadas}</text><text x=".04" y=".28" font-size=".07" fill="#8ea2a7">aprovadas</text>`}
+function moveLab(){const t0=agoraBR(),h=Math.floor(t0/60),mn=t0%60;
+ TESTERS.forEach((t,ti)=>{const g=document.querySelector(`.bot[data-lab="${t.nome}"]`);if(!g)return;const on=h>=t.ini&&h<t.fim;g.style.display=on?'':'none';if(!on){t.at=null;return}
+  const pausa=t0>=t.pausa[0]&&t0<t.pausa[1],cafe=!pausa&&mn>=t.cafe&&mn<t.cafe+5,spot=pausa?'pausa':cafe?'cafe':'mesa';
+  const xy=pausa?t.meal:cafe?CAFE_SPOTS[ti%4]:t.seat,[x,y]=P(xy[0],xy[1]),pose=spot==='mesa'?'sit':'stand',item=pausa?'plate':cafe?'mug':'';t.xy=xy;
+  if(t.at!==spot){const first=t.at===null;t.at=spot;g.style.transition=first?'none':'';g.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;if(!first){g.dataset.pose='walk';clearTimeout(t.tw);t.tw=setTimeout(()=>{g.dataset.pose=pose},3100)}else g.dataset.pose=pose}
+  g.dataset.item=item;g.setAttribute('class','bot tester lab');
+  const n=LAB?LAB.testadas_unicas:0,turno=`${t.ini}h–${t.fim}h`;
+  const txt=pausa?`${t.pausaTxt}`:cafe?`turno ${turno} · café`:`turno ${turno} · ${LAB?n.toLocaleString('pt-BR')+' testadas':'testando'}`;g.querySelector('.st').textContent=txt;g.querySelector('title').textContent=`${t.nome}: ${txt}`;
+  g.querySelector('.tag').setAttribute('transform',`translate(0,-${spot==='mesa'?82:80})`)});
+ const pr=LAB&&LAB.grade_total?LAB.cursor/LAB.grade_total:0,rk=LAB?(LAB.ranking||[]).slice(0,5):[];
+ ['lab','lab2'].forEach(px=>{const L3=[0,1,2].map(j=>$(px+'-'+j));if(!L3[0]||!LAB)return;
+  L3[0].innerHTML=`<rect x=".04" y=".05" width=".46" height=".05" rx=".02" fill="#fff" opacity=".12"/><rect x=".04" y=".05" width="${(.46*pr).toFixed(3)}" height=".05" rx=".02" fill="#b58cf0"/>`+[.15,.2,.25].map((y,i)=>`<rect x=".04" y="${y}" width="${[.42,.3,.36][i]}" height=".022" fill="#fff" opacity=".22"/>`).join('');
+  L3[1].innerHTML=rk.map((r,i)=>`<rect x=".04" y="${(.04+i*.058).toFixed(3)}" width="${Math.max(.02,Math.min(.44,(r.valid&&r.valid.ret||0)*.44+.05)).toFixed(3)}" height=".036" fill="${r.forte?'#3ecf8e':'#b58cf0'}"/>`).join('')||'<rect x=".04" y=".15" width=".44" height=".03" fill="#fff" opacity=".15"/>';
+  L3[2].innerHTML=`<text x=".04" y=".14" font-size=".09" fill="#b58cf0">${LAB.aprovadas}</text><text x=".04" y=".28" font-size=".07" fill="#8ea2a7">aprovadas</text>`});
  [...document.querySelectorAll('#bots .bot')].filter(g=>g.style.display!=='none').sort((a,b)=>{const xy=g=>g.dataset.lab?(TESTERS.find(t=>t.nome===g.dataset.lab).xy||LABHOME):(MK[g.dataset.k].xy||[0,0]);const A=xy(a),B=xy(b);return (A[0]+A[1])-(B[0]+B[1])}).forEach(g=>$('bots').appendChild(g))}
 setInterval(()=>{if(ORDER.length){moveOps();moveLab()}},20000);
 
@@ -515,7 +530,7 @@ function renderCheck(){if(!ORDER.length){$('check').innerHTML=`<li class="w"><i>
 function renderLab(){const el=$('lab');if(!LAB){el.innerHTML=`<div class="diag">${loaded?'O laboratório ainda não gravou resultados. A primeira rodada sai em até 1 hora.':'Entre para ver o laboratório.'}</div>`;return}
  const L=LAB,pr=L.grade_total?L.cursor/L.grade_total:0,t=L.turno||{},R=L.regras||{},fr=v=>v==null?'–':pct(v),cl=v=>v>0?'up':v<0?'down':'';
  const linha=(r,atual)=>`<tr><td>${atual?'<b>Atual do robô</b><br>':''}${esc(r.par)} · ${esc(r.nome)}${r.forte?' <span class="tag c">forte</span>':''}</td><td class="r ${cl(r.valid&&r.valid.ret)}">${fr(r.valid&&r.valid.ret)}</td><td class="r">${r.valid?r.valid.pf.toFixed(2).replace('.',','):'–'}</td><td class="r ${cl(r.teste&&r.teste.ret)}">${fr(r.teste&&r.teste.ret)}</td><td class="r">${(r.treino?r.treino.n:0)+(r.valid?r.valid.n:0)+(r.teste?r.teste.n:0)}</td></tr>`;
- el.innerHTML=`<div class="kv" style="margin-top:10px"><div><span>De turno agora</span><b>${esc(t.nome||'–')} · ${t.inicio??''}h–${t.fim??''}h</b></div><div><span>Testadas</span><b>${(L.testadas_unicas||0).toLocaleString('pt-BR')} de ${L.grade_total.toLocaleString('pt-BR')}</b></div><div><span>Aprovadas</span><b class="${L.aprovadas?'up':''}">${L.aprovadas}</b></div><div><span>Fortes (passaram até em 2026)</span><b class="${L.fortes?'up':''}">${L.fortes}</b></div></div>
+ el.innerHTML=`<div class="kv" style="margin-top:10px"><div><span>De turno agora (${t.inicio??''}h–${t.fim??''}h)</span><b>${esc(t.nome||'–')}</b></div><div><span>Testadas</span><b>${(L.testadas_unicas||0).toLocaleString('pt-BR')} de ${L.grade_total.toLocaleString('pt-BR')}</b></div><div><span>Aprovadas</span><b class="${L.aprovadas?'up':''}">${L.aprovadas}</b></div><div><span>Fortes (passaram até em 2026)</span><b class="${L.fortes?'up':''}">${L.fortes}</b></div></div>
  <div style="margin-top:12px"><div class="sub">Rodada ${L.rodada} · ${Math.round(pr*100)}% da grade · último lote: ${esc(L.ultimo_lote&&L.ultimo_lote.por)} testou ${L.ultimo_lote?L.ultimo_lote.qtd:0} ${ago(new Date(L.atualizado_em))}</div><div class="bar" style="margin-top:6px"><i style="width:${(pr*100).toFixed(1)}%;background:#b58cf0"></i></div></div>
  <table class="stack" style="margin-top:12px"><thead><tr><th>Estratégia</th><th class="r">Validação</th><th class="r">PF</th><th class="r">2026</th><th class="r">Ops</th></tr></thead><tbody>${(L.ranking||[]).slice(0,8).map(r=>linha(r)).join('')||'<tr><td colspan="5">Nenhuma aprovada ainda.</td></tr>'}${L.atual?linha(L.atual,true):''}</tbody></table>
  <div class="sub" style="margin-top:10px">Treino ${R.treino?R.treino.join(' a ').replace(/-\d\d-\d\d/g,''):'2022–23'}, validação 2024–25 e conferência em 2026, com taxa de ${((R.taxa||0)*100).toFixed(1).replace('.',',')}% + slippage por ordem. Dados: ${esc(R.dados||'Bitstamp')}. Testar milhares de combinações faz algumas passarem por sorte: nenhuma vai pro dinheiro real sem antes rodar no modo simulado.</div>`}

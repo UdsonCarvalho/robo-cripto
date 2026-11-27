@@ -1,8 +1,8 @@
-"""Laboratório de estratégias: três testadores em turnos de 8 h, 24 h por dia.
+"""Laboratório de estratégias: testadores em turnos de 8 h, 24 h por dia (Lia; Davi, Bia e Léo; Nina).
 
 SÓ TESTA. Não importa corretora com chave, não lê API_KEY e não envia ordem nenhuma.
 
-Cada execução (o GitHub Actions roda de hora em hora, 90 configurações por vez, ~1 volta por dia) pega o próximo lote da grade de
+Cada execução (o GitHub Actions roda de hora em hora; cada testador do turno testa 90, então das 8h às 16h a equipe de 3 testa 270 por hora) pega o próximo lote da grade de
 configurações, testa de forma honesta e grava o placar no Supabase para a sala mostrar:
 
   TREINO (2022-2023)     -> período usado para ranquear
@@ -35,11 +35,12 @@ BAIXAR_DESDE = "2021-06-01"
 PARES = ["BTC/USD", "ETH/USD"]          # histórico longo da Bitstamp (a Foxbit tem pouco pela API)
 TIMEFRAMES = ["1h", "4h", "1d"]
 MIN_TRADES, PF_MINIMO = 8, 1.1
-TURNOS = [  # (início, fim, nome) no horário de Brasília
-    (0, 8, "Lia"),
-    (8, 16, "Davi"),
-    (16, 24, "Nina"),
+TURNOS = [  # (início, fim, equipe) no horário de Brasília; cada testador roda um lote de 90 por hora
+    (0, 8, ["Lia"]),
+    (8, 16, ["Davi", "Bia", "Léo"]),
+    (16, 24, ["Nina"]),
 ]
+POR_TESTADOR = 90
 ATUAL = ("1d", {"tipo": "tendencia_mm", "mm_periodo": 50, "mm_banda": 0.02, "trailing_atr": 0, "stop_atr": 6.0, "alvo_atr": 0})
 
 
@@ -84,10 +85,11 @@ def descrever(tf, p):
 
 def turno_agora(agora):
     h = agora.astimezone(ZoneInfo("America/Sao_Paulo")).hour
-    for ini, fim, nome in TURNOS:
+    for ini, fim, equipe in TURNOS:
         if ini <= h < fim:
-            return {"nome": nome, "inicio": ini, "fim": fim}
-    return {"nome": TURNOS[0][2], "inicio": 0, "fim": 8}
+            return {"nome": ", ".join(equipe[:-1]) + " e " + equipe[-1] if len(equipe) > 1 else equipe[0],
+                    "equipe": equipe, "inicio": ini, "fim": fim}
+    return {"nome": TURNOS[0][2][0], "equipe": TURNOS[0][2], "inicio": 0, "fim": 8}
 
 
 def avaliar(dados, cfg, periodo):
@@ -115,7 +117,7 @@ def testar(base, dados, par, tf, params):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--lote", type=int, default=int(os.getenv("LAB_LOTE", "90")))
+    ap.add_argument("--lote", type=int, default=int(os.getenv("LAB_LOTE", "0")), help="0 = 90 por testador do turno")
     args = ap.parse_args()
 
     base = carregar_config()
@@ -127,10 +129,11 @@ def main():
     estado = (arm.ler("estado") if arm else None) or {"cursor": 0, "rodada": 1, "testes_feitos": 0}
     resultados = (arm.ler("resultados") if arm else None) or {}
 
-    inicio = estado["cursor"] % len(todas)
-    lote = [todas[(inicio + i) % len(todas)] for i in range(min(args.lote, len(todas)))]
     agora = datetime.now(timezone.utc)
     turno = turno_agora(agora)
+    tamanho = args.lote or POR_TESTADOR * len(turno["equipe"])
+    inicio = estado["cursor"] % len(todas)
+    lote = [todas[(inicio + i) % len(todas)] for i in range(min(tamanho, len(todas)))]
     print(f"Turno de {turno['nome']} ({turno['inicio']:02d}h-{turno['fim']:02d}h) | rodada {estado['rodada']} | "
           f"lote {inicio + 1}-{inicio + len(lote)} de {len(todas)}")
 
@@ -172,7 +175,7 @@ def main():
 
     status = {
         "atualizado_em": agora.isoformat(), "turno": turno,
-        "turnos": [{"nome": n, "inicio": i, "fim": f} for i, f, n in TURNOS],
+        "turnos": [{"equipe": e, "inicio": i, "fim": f} for i, f, e in TURNOS],
         "grade_total": len(todas), "testadas_unicas": len(lista), "testes_feitos": estado["testes_feitos"],
         "rodada": estado["rodada"], "cursor": estado["cursor"],
         "aprovadas": len(aprov), "fortes": sum(r["forte"] for r in lista),
