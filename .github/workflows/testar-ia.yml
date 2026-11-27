@@ -1,0 +1,33 @@
+name: Testar IA do conselho
+
+# Faz UMA pergunta curtinha ao Claude (modelo Haiku, custo de frações de centavo)
+# só para confirmar que o segredo ANTHROPIC_API_KEY está funcionando.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Perguntar ao Claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then echo "SEM CHAVE: o segredo ANTHROPIC_API_KEY não foi encontrado."; exit 1; fi
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.error
+          corpo = json.dumps({"model": "claude-haiku-5-5", "max_tokens": 60, "messages": [{"role": "user", "content":
+                  "Responda em uma frase curta, em português: você é a IA do conselho da Agência COINS e está pronta para trabalhar."}]}).encode()
+          req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=corpo, headers={
+              "x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01", "content-type": "application/json"})
+          try:
+              r = json.loads(urllib.request.urlopen(req, timeout=60).read())
+              print("IA OK:", "".join(b.get("text", "") for b in r["content"]))
+              print("Tokens usados:", r.get("usage"))
+          except urllib.error.HTTPError as e:
+              print("ERRO DA API:", e.code, e.read().decode()[:300]); raise SystemExit(1)
+          PY
