@@ -1,5 +1,5 @@
 {
-  "atualizado_em": "2026-11-27T18:05:00Z",
+  "atualizado_em": "2026-11-27T18:15:00Z",
   "cidade": "Coins RJ Roleplay",
   "base": "Qbox (qbx_core) via txAdmin",
   "equipe": [
@@ -141,7 +141,7 @@
       "titulo": "PMERJ e Polícia Civil (qbx_policejob)",
       "status": "testar",
       "dono": "Rafa",
-      "detalhe": "Pacotes 1, 2 e 4: patentes, delegacias cariocas, arsenal por patente (fuzil só a partir de Sargento), multas em R$ no padrão do CTB, placa PMERJ e Código Penal. Falta: prisão (resource qbx_prison).",
+      "detalhe": "Pacotes 1, 2 e 4: patentes, delegacias cariocas, arsenal por patente (fuzil só a partir de Sargento), multas em R$ no padrão do CTB, placa PMERJ e Código Penal.",
       "precisa_silva": true
     },
     {
@@ -206,9 +206,10 @@
       "id": "prisao",
       "setor": "Polícia",
       "titulo": "Prisão (qbx_prison)",
-      "status": "afazer",
+      "status": "testar",
       "dono": "Rafa",
-      "detalhe": "Instalar e configurar a cadeia para o /jail levar o preso e cumprir a pena do Código Penal."
+      "detalhe": "Pacote 5: qbx_prison com Complexo Penitenciário Coins RJ, textos em português do Brasil, cantina em R$ e trabalho para reduzir a pena. Testar com /jail.",
+      "precisa_silva": true
     }
   ]
 }
