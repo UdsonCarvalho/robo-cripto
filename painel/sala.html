@@ -77,6 +77,13 @@ input{font:16px "IBM Plex Sans";min-height:44px;padding:0 12px;border-radius:10p
 .bot{cursor:pointer;outline:none}
 .bot{--st:var(--teal)}.bot.pos{--st:var(--ok)}.bot.warn{--st:var(--warn)}
 .bot .ring{opacity:0;transition:opacity .2s}.bot.sel .ring,.bot:focus-visible .ring{opacity:1}
+.bot{transition:transform 3s ease-in-out}.bot .pose-stand,.bot .pose-rest{display:none}
+.bot[data-pose=stand] .pose-sit,.bot[data-pose=walk] .pose-sit,.bot[data-pose=rest] .pose-sit{display:none}
+.bot[data-pose=stand] .pose-stand,.bot[data-pose=walk] .pose-stand{display:inline}.bot[data-pose=rest] .pose-rest{display:inline}
+.bot .mug,.bot .plate{display:none}.bot[data-item=mug] .mug,.bot[data-item=plate] .plate{display:inline}.bot[data-pose=walk] .mug,.bot[data-pose=walk] .plate{display:none}
+.bot[data-pose=walk] .lg1{animation:step .35s infinite alternate}.bot[data-pose=walk] .lg2{animation:step .35s .175s infinite alternate}@keyframes step{to{transform:translateY(-3px)}}
+.bot .steam{animation:steam 2s infinite}@keyframes steam{50%{opacity:.2;transform:translateY(-2px)}}
+.bot.idle .hl,.bot.idle .hr{animation-duration:1.4s}
 .bot .hl{animation:type .28s ease-in-out infinite alternate}.bot .hr{animation:type .28s ease-in-out .14s infinite alternate}
 .bot .head{animation:look 7s ease-in-out infinite;transform-origin:1px -45px;transform-box:view-box}
 .bot.warn .hl,.bot.warn .hr{animation:none}.bot.warn .head{animation:none;transform:rotate(-8deg)}
@@ -119,13 +126,14 @@ table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-bl
       </div>
       <div class="tabs" role="tablist" id="tabs"></div>
       <div class="fig"><svg id="chart"></svg></div>
-      <div class="legend"><span><i style="background:#dff5f2"></i>Preço (fechamento diário)</span><span><i style="background:#e9b949"></i><span id="lgMM">Média</span></span><span><i style="background:#e9b94955;height:10px"></i>Faixa de compra/venda</span><span><i style="background:#3ecf8e33;height:10px"></i>Comprado</span><span><i style="background:#3ecf8e;height:8px;width:8px;border-radius:2px"></i>Compra</span><span><i style="background:#ef5350;height:8px;width:8px;border-radius:2px"></i>Venda</span></div>
+      <div class="legend" id="legend"></div>
       <div class="stats" id="fxStats"></div>
       <table class="stack"><thead><tr><th>Data</th><th>Ordem</th><th class="r">Preço</th><th class="r">Valor</th><th class="r">Resultado</th><th>Motivo</th></tr></thead><tbody id="fxTrades"></tbody></table>
     </div>
   </div>
   <aside class="col">
     <div class="card" id="panel"></div>
+    <div class="card"><h3>Quadro de ganhos e perdas</h3><div class="sub">Operações de hoje e saldo dos últimos 7 dias</div><div id="quadro"></div></div>
     <div class="card"><h3>Pronto para operar?</h3><div class="sub">Conferido com os dados que o robô gravou</div><ul class="check" id="check"></ul></div>
     <div class="card"><h3>Log do robô</h3><div class="sub">Últimas mensagens gravadas na tabela robo_log</div><ul class="feed" id="feed"></ul></div>
   </aside>
@@ -188,7 +196,8 @@ async function carregar(){
   for(const k in MK)delete MK[k];
   lista.forEach((st,n)=>{const key=st.par.split('/')[0].toUpperCase(),g=st.grafico||{},t=Array.isArray(g.t)?g.t:[],pr=Array.isArray(g.preco)?g.preco:[];
    const m=MK[key]={key,par:st.par,rotulo:st.rotulo,modo:String(st.modo||''),
-    d:t.map((x,i)=>({t:new Date(String(x)+'T00:00:00'),k:String(x),c:Number(pr[i])})).filter(x=>isFinite(x.c)),
+    d:t.map((x,i)=>{const z=String(x);return {t:new Date(/T/.test(z)?z:z+'T00:00:00'),k:z.slice(0,10),c:Number(pr[i])}}).filter(x=>isFinite(x.c)&&!isNaN(x.t)),
+    fast:Array.isArray(g.rapida)?g.rapida.map(v=>v==null?null:Number(v)):null,fastName:String(g.linha_rapida||'EMA rápida'),ind:g.ind||{},regras:g.regras||{},intraday:t.some(x=>/T/.test(String(x))),horario:st.horario||null,fixo:Number(st.valor_fixo_reais)||0,
     mm:Array.isArray(g.media)?g.media.map(v=>v==null?null:Number(v)):null,band:Number(g.banda)||0,linha:String(g.linha||'Média'),
     price:Number(st.preco)||0,cap:Number(st.risco&&st.risco.capital_maximo)||0,livre:Number(st.saldo_livre)||0,pnlDia:Number(st.pnl_dia)||0,tradesDia:Number(st.trades_dia)||0,
     parado:!!st.parado,upd:st.atualizado_em?new Date(st.atualizado_em):null,risco:st.risco||{},tf:String(st.timeframe||''),est:String(st.estrategia||'')};
@@ -284,93 +293,136 @@ function buildRoom(){const key=ORDER.join(',');if(built===key)return;built=key;
  const plant=(x,y,s=1)=>{const [a,b]=P(x,y);return sh(x-.2,y-.2,.4,.4,.35)+box(x-.18,y-.18,.36,.36,.3,['#8a6a4f','#6b513c','#7a5d45'])+`<ellipse cx="${a}" cy="${b-17*s}" rx="${15*s}" ry="${18*s}" fill="#2f7a4c"/><ellipse cx="${a-6*s}" cy="${b-25*s}" rx="${8*s}" ry="${9*s}" fill="#4ea06b"/><ellipse cx="${a+7*s}" cy="${b-15*s}" rx="${6*s}" ry="${7*s}" fill="#3d8c5a"/><ellipse cx="${a+2*s}" cy="${b-31*s}" rx="${5*s}" ry="${6*s}" fill="#5bb27a"/>`};
  st+=plant(.5,1.25)+plant(6.45,.45,.75)+plant(.5,8.0,1.1)+plant(7.6,8.05,.9);
  $('static').innerHTML=st;tickClock();
- const bg=$('bots');bg.innerHTML='';
+ const bg=$('bots');bg.innerHTML='';let chairs='';
  ORDER.slice(0,4).forEach((k,n)=>{const m=MK[k],L=LOOK[k]||LOOKX[n%2];
-  const g=document.createElementNS(NS,'g');g.setAttribute('class','bot');g.dataset.k=k;g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label','Operador '+m.par);
-  const [x,y]=P(m.home[0],m.home[1]);g.setAttribute('transform',`translate(${x.toFixed(1)},${y.toFixed(1)})`);
-  const name='Operador '+k,tw=Math.max(name.length*7+26,140),dk=shade(L.shirt,.72);
-  g.innerHTML=`<ellipse cx="0" cy="0" rx="17" ry="6.5" fill="rgba(0,0,0,.45)"/><ellipse class="ring" cx="0" cy="0" rx="24" ry="9.5" fill="none" stroke="#e9b949" stroke-width="2"/>
+  const [cx,cy]=P(m.home[0],m.home[1]);chairs+=`<g transform="translate(${cx.toFixed(1)},${cy.toFixed(1)})"><ellipse cx="0" cy="-2" rx="10" ry="3.4" fill="#26292c"/><rect x="-1.6" y="-15" width="3.2" height="13" fill="#3a3e42"/><ellipse cx="0" cy="-16" rx="13" ry="5" fill="#2b2f33"/><rect x="-11.5" y="-31" width="23" height="15" rx="5" fill="#23272b"/><rect x="-11.5" y="-31" width="23" height="4" rx="2" fill="#2f3439"/></g>`;
+  const g=document.createElementNS(NS,'g');g.setAttribute('class','bot');g.dataset.k=k;g.dataset.pose='sit';g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label','Operador '+m.par);
+  const name='Operador '+k,tw=Math.max(name.length*7+26,150),dk=shade(L.shirt,.72),pants='#2b3440';
+  const head=`<rect x="-3" y="-45" width="6" height="5" fill="${L.skin}"/><g class="head"><circle cx="1" cy="-53" r="9" fill="${L.skin}"/><path d="M-8.3 -52 A9.3 9.3 0 0 1 9.6 -56 Q6 -50 6.5 -45 Q0 -43 -7 -46 Z" fill="${L.hair}"/><ellipse cx="7.6" cy="-51" rx="2.6" ry="4.6" fill="${L.skin}"/><path d="M-8 -53 Q0 -66 9 -55" stroke="#1d1f22" stroke-width="2" fill="none"/><ellipse cx="-8" cy="-52" rx="2.4" ry="3.4" fill="#1d1f22"/></g>`;
+  const torso=`<path d="M-11 -16 Q-13 -36 -7 -41 L7 -41 Q13 -36 11 -16 Z" fill="${L.shirt}"/><path d="M-7 -41 L7 -41 Q9 -38 9 -34 L-9 -34 Q-9 -38 -7 -41Z" fill="#fff" opacity=".12"/>`;
+  g.innerHTML=`<g class="mv"><ellipse cx="0" cy="0" rx="15" ry="6" fill="rgba(0,0,0,.4)"/><ellipse class="ring" cx="0" cy="0" rx="24" ry="9.5" fill="none" stroke="#e9b949" stroke-width="2"/>
   <ellipse cx="0" cy="-1" rx="11" ry="4" style="fill:var(--st)" opacity=".4" filter="url(#glow)"/>
-  <ellipse cx="0" cy="-2" rx="10" ry="3.4" fill="#26292c"/><rect x="-1.6" y="-15" width="3.2" height="13" fill="#3a3e42"/><ellipse cx="0" cy="-16" rx="13" ry="5" fill="#2b2f33"/>
-  <g class="arms"><path d="M-8 -36 Q-4 -44 3 -47" stroke="${dk}" stroke-width="5.5" fill="none" stroke-linecap="round"/><path d="M8 -36 Q13 -41 17 -44" stroke="${dk}" stroke-width="5.5" fill="none" stroke-linecap="round"/>
-   <circle class="hl" cx="4" cy="-48" r="2.8" fill="${L.skin}"/><circle class="hr" cx="18" cy="-45" r="2.8" fill="${L.skin}"/></g>
-  <g class="torso"><path d="M-11 -16 Q-13 -36 -7 -41 L7 -41 Q13 -36 11 -16 Z" fill="${L.shirt}"/><path d="M-7 -41 L7 -41 Q9 -38 9 -34 L-9 -34 Q-9 -38 -7 -41Z" fill="#fff" opacity=".12"/>
-   <rect x="-3" y="-45" width="6" height="5" fill="${L.skin}"/>
-   <g class="head"><circle cx="1" cy="-53" r="9" fill="${L.skin}"/><path d="M-8.3 -52 A9.3 9.3 0 0 1 9.6 -56 Q6 -50 6.5 -45 Q0 -43 -7 -46 Z" fill="${L.hair}"/><ellipse cx="7.6" cy="-51" rx="2.6" ry="4.6" fill="${L.skin}"/>
-    <path d="M-8 -53 Q0 -66 9 -55" stroke="#1d1f22" stroke-width="2" fill="none"/><ellipse cx="-8" cy="-52" rx="2.4" ry="3.4" fill="#1d1f22"/></g></g>
-  <rect x="-11.5" y="-31" width="23" height="15" rx="5" fill="#23272b"/><rect x="-11.5" y="-31" width="23" height="4" rx="2" fill="#2f3439"/>
-  <g transform="translate(0,-86)"><rect x="${-tw/2}" y="-12" width="${tw}" height="34" rx="10" fill="rgba(12,11,9,.92)" style="stroke:var(--st)" stroke-opacity=".85"/><circle cx="${-tw/2+12}" cy="-1" r="3.5" style="fill:var(--st)" class="lamp"/><text x="4" y="2" fill="#e8f0f1" font-size="12" font-weight="600" text-anchor="middle">${esc(name)}</text><text class="st" x="0" y="16" fill="#8ea2a7" font-size="10.5" text-anchor="middle"></text></g>`;
-  bg.appendChild(g)})}
+  <g class="pose-sit"><g class="arms"><path d="M-8 -36 Q-4 -44 3 -47" stroke="${dk}" stroke-width="5.5" fill="none" stroke-linecap="round"/><path d="M8 -36 Q13 -41 17 -44" stroke="${dk}" stroke-width="5.5" fill="none" stroke-linecap="round"/><circle class="hl" cx="4" cy="-48" r="2.8" fill="${L.skin}"/><circle class="hr" cx="18" cy="-45" r="2.8" fill="${L.skin}"/></g>
+   ${torso}${head}<rect x="-11.5" y="-31" width="23" height="15" rx="5" fill="#23272b"/><rect x="-11.5" y="-31" width="23" height="4" rx="2" fill="#2f3439"/></g>
+  <g class="pose-stand"><g class="legs"><rect class="lg1" x="-6" y="-22" width="5" height="21" rx="2" fill="${pants}"/><rect class="lg2" x="1" y="-22" width="5" height="21" rx="2" fill="${pants}"/><ellipse cx="-3.5" cy="-1" rx="3.6" ry="1.8" fill="#151515"/><ellipse cx="3.5" cy="-1" rx="3.6" ry="1.8" fill="#151515"/></g>
+   <g transform="translate(0,-7)"><path d="M-9 -38 Q-12 -30 -11 -20" stroke="${dk}" stroke-width="5" fill="none" stroke-linecap="round"/>${torso.replace('-11 -16','-10 -16').replace('11 -16 Z','10 -16 Z')}${head}
+    <path d="M9 -38 Q13 -30 7 -27" stroke="${dk}" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="6" cy="-27" r="2.6" fill="${L.skin}"/>
+    <g class="mug"><rect x="2" y="-33" width="6" height="7" rx="1.2" fill="#f2efe9"/><path d="M8 -31 q3 1 0 3" stroke="#f2efe9" stroke-width="1.2" fill="none"/><path class="steam" d="M4 -36 q-2 -3 0 -6 q2 -3 0 -6" stroke="#fff" stroke-opacity=".5" stroke-width="1" fill="none"/></g>
+    <g class="plate"><ellipse cx="6" cy="-29" rx="7" ry="2.4" fill="#f2efe9"/><ellipse cx="5" cy="-30.5" rx="3.5" ry="1.4" fill="#c9733a"/><ellipse cx="8" cy="-30.6" rx="2" ry="1" fill="#5b9a4a"/></g></g></g>
+  <g class="pose-rest"><rect x="-9" y="-20" width="18" height="8" rx="3" fill="${pants}"/><rect x="-9" y="-14" width="7" height="13" rx="2.5" fill="${pants}"/><rect x="2" y="-14" width="7" height="13" rx="2.5" fill="${pants}"/>
+   <g transform="rotate(-6 0 -20)">${torso}<path d="M-9 -36 Q-12 -28 -9 -20" stroke="${dk}" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M9 -36 Q12 -28 9 -20" stroke="${dk}" stroke-width="5" fill="none" stroke-linecap="round"/>${head}</g></g>
+  <g class="tag" transform="translate(0,-90)"><rect x="${-tw/2}" y="-12" width="${tw}" height="34" rx="10" fill="rgba(12,11,9,.92)" style="stroke:var(--st)" stroke-opacity=".85"/><circle cx="${-tw/2+12}" cy="-1" r="3.5" style="fill:var(--st)" class="lamp"/><text x="4" y="2" fill="#e8f0f1" font-size="12" font-weight="600" text-anchor="middle">${esc(name)}</text><text class="st" x="0" y="16" fill="#8ea2a7" font-size="10.5" text-anchor="middle"></text></g></g>`;
+  m.at=null;bg.appendChild(g)});
+ $('static').insertAdjacentHTML('beforeend',chairs)}
 
-function wallChart(el,m,W,Hh,isSel){
+/* ---------- rotina dos operadores (relógio de Brasília) ---------- */
+const HOR={inicio:'09:00',almoco:['12:00','13:00'],fim:'18:00'};
+const toMin=s=>parseInt(String(s).slice(0,2))*60+parseInt(String(s).slice(3,5));
+const agoraBR=()=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()).map(x=>[x.type,x.value]));return (+p.hour%24)*60+(+p.minute)};
+const diaBR=d=>d.toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'});
+function faseAgora(m){const h=(m&&m.horario)||HOR,t=agoraBR();if(t<toMin(h.inicio)||t>=toMin(h.fim))return 'fechado';const a=h.almoco;if(a&&t>=toMin(a[0])&&t<toMin(a[1]))return 'almoco';return 'aberto'}
+function atividade(m,n){const f=faseAgora(m),t=agoraBR()%60;
+ if(m.qty)return {spot:'mesa',pose:'sit',txt:`comprado ${money(m.aberto)}`,type:true};
+ if(stale(m))return {spot:'mesa',pose:'sit',txt:'robô sem atualizar',type:false};
+ if(CTRL.pausado)return {spot:'mesa',pose:'sit',txt:'pausado',type:false};
+ if(f==='fechado')return {spot:'sofa',pose:'rest',txt:'fim do expediente · descansando'};
+ if(f==='almoco')return {spot:'almoco',pose:'stand',item:'plate',txt:'almoçando (volta às 13h)'};
+ const c0=(25+n*20)%60;if(t>=c0&&t<c0+5)return {spot:'cafe',pose:'stand',item:'mug',txt:'pausa para o café'};
+ return {spot:'mesa',pose:'sit',txt:'vigiando o cruzamento',type:true}}
+function spotXY(m,n,spot){return spot==='mesa'?m.home:spot==='cafe'?[.7+n*.55,1.25]:spot==='almoco'?[[8.05,5.5],[8.9,6.95],[8.05,6.4],[9.4,6.95]][n%4]:[10.15,5.55+n*.95]}
+function moveOps(){ORDER.slice(0,4).forEach((k,n)=>{const m=MK[k],g=document.querySelector(`.bot[data-k="${k}"]`);if(!g||!m.home)return;const a=atividade(m,n),xy=spotXY(m,n,a.spot),mv=g.querySelector('.mv');
+  const [x,y]=P(xy[0],xy[1]);const alvo=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;m.xy=xy;
+  const flip=a.spot==='sofa'?' scale(-1,1)':'';
+  if(m.at!==a.spot){const primeira=m.at===null;m.at=a.spot;g.style.transition=primeira?'none':'';g.style.transform=alvo;
+   if(!primeira){g.dataset.pose='walk';clearTimeout(m.tw);m.tw=setTimeout(()=>{g.dataset.pose=a.pose;mv.style.transform=flip},3100)}else{g.dataset.pose=a.pose;mv.style.transform=flip}}
+  else if(g.dataset.pose!=='walk'){g.dataset.pose=a.pose;mv.style.transform=flip}
+  g.dataset.item=a.item||'';g.classList.toggle('idle',!a.type);
+  g.querySelector('.st').textContent=a.txt;g.querySelector('.tag').setAttribute('transform',`translate(0,${-90-(a.spot!=='mesa'?n*40:0)})${flip}`)});
+ [...document.querySelectorAll('#bots .bot')].sort((a,b)=>{const A=MK[a.dataset.k].xy||[0,0],B=MK[b.dataset.k].xy||[0,0];return (A[0]+A[1])-(B[0]+B[1])}).forEach(g=>$('bots').appendChild(g))}
+setInterval(()=>{if(ORDER.length)moveOps()},20000);
+
+/* ---------- gráficos: preço, EMA rápida x lenta e cruzamentos ---------- */
+const fastAt=(m,i)=>m.fast?(m.fast[i]??null):null;
+const locate=(D,t)=>{if(!D.length||t<D[0].t)return -1;let lo=0,hi=D.length-1;while(lo<hi){const mid=(lo+hi+1)>>1;if(D[mid].t<=t)lo=mid;else hi=mid-1}return lo};
+function cruzamentos(m,from,to){const out=[];if(!m.fast)return out;for(let i=Math.max(from,1);i<=to;i++){const a=fastAt(m,i-1),b=mmAt(m,i-1),c=fastAt(m,i),d=mmAt(m,i);if([a,b,c,d].some(v=>v==null))continue;if(a<=b&&c>d)out.push([i,'up']);else if(a>=b&&c<d)out.push([i,'down'])}return out}
+function janela(m,n){const D=m.d.slice(-n),o0=m.d.length-D.length;let lo=Infinity,hi=-Infinity;
+ D.forEach((x,i)=>{const vs=[x.c,mmAt(m,i+o0),fastAt(m,i+o0)];const v=mmAt(m,i+o0);if(v!=null&&m.band)vs.push(v*(1-m.band),v*(1+m.band));vs.forEach(z=>{if(z!=null){lo=Math.min(lo,z);hi=Math.max(hi,z)}})});
+ if(m.price){lo=Math.min(lo,m.price);hi=Math.max(hi,m.price)}if(m.qty&&m.stop&&m.stop>lo-(hi-lo)*.3)lo=Math.min(lo,m.stop);const pd=(hi-lo)*.07||1;return {D,o0,lo:lo-pd,hi:hi+pd}}
+const tradeIdx=(m,t,o0,n)=>{const i=locate(m.d,t.t)-o0;return i>=0&&i<n?i:null};
+const tickLabel=(m,D,i)=>{if(!i)return null;const a=D[i].t,b=D[i-1].t;if(m.intraday){if(diaBR(a)!==diaBR(b))return a.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',timeZone:'America/Sao_Paulo'});const h=+new Intl.DateTimeFormat('en-GB',{timeZone:'America/Sao_Paulo',hour:'2-digit',hour12:false}).format(a)%24,hb=+new Intl.DateTimeFormat('en-GB',{timeZone:'America/Sao_Paulo',hour:'2-digit',hour12:false}).format(b)%24;return h!==hb&&h%6===0?h+'h':null}
+ return a.getMonth()!==b.getMonth()?a.toLocaleDateString('pt-BR',{month:'short'}).replace('.',''):null};
+
+function wallChart(el,m,W,Hh){
  if(!m||m.d.length<2){el.innerHTML=`<text x="${W/2}" y="${Hh/2}" font-size=".16" fill="#7d8c8f" text-anchor="middle">${m?'sem gráfico gravado':''}</text>`;return}
- const w=m.d.slice(-90),o0=m.d.length-w.length,pl=.14,pr=.78,pt=.42,pb=.2,iw=W-pl-pr,ih=Hh-pt-pb;
- let lo=Infinity,hi=-Infinity;w.forEach((x,i)=>{lo=Math.min(lo,x.c);hi=Math.max(hi,x.c);const v=mmAt(m,i+o0);if(v!=null){lo=Math.min(lo,v*(1-m.band));hi=Math.max(hi,v*(1+m.band))}});
- if(m.price){lo=Math.min(lo,m.price);hi=Math.max(hi,m.price)}const pd=(hi-lo)*.06||1;lo-=pd;hi+=pd;
- const X=i=>pl+iw*i/(w.length-1),Y=v=>pt+(hi-v)/(hi-lo)*ih,f=v=>v>=1e4?(v/1e3).toFixed(0)+' mil':v.toFixed(0),r3=v=>v.toFixed(3);
- const first=w[0].c,ch=(m.price||w[w.length-1].c)/first-1;let o='';
- o+=`<text x="${pl}" y=".24" font-size=".17" font-weight="700" fill="#e9b949" font-family="Chakra Petch">${esc(m.par)}</text><text x="${pl+.95}" y=".24" font-size=".13" fill="#7d8c8f">90 dias · <tspan fill="${ch>=0?'#3ecf8e':'#ef5350'}">${pct(ch)}</tspan></text>`;
- o+=`<text x="${W-.12}" y=".24" font-size=".17" font-weight="700" fill="#e8f0f1" text-anchor="end" font-family="Chakra Petch">${esc(brl(m.price,0))}</text>`;
- for(let g=0;g<=3;g++){const v=lo+(hi-lo)*g/3,y=Y(v);o+=`<line x1="${pl}" x2="${pl+iw}" y1="${r3(y)}" y2="${r3(y)}" stroke="#ffffff" stroke-opacity=".07" stroke-width="1" vector-effect="non-scaling-stroke"/><text x="${pl+iw+.06}" y="${r3(y+.04)}" font-size=".1" fill="#7d8c8f">${f(v)}</text>`}
- w.forEach((x,i)=>{if(i&&x.t.getMonth()!==w[i-1].t.getMonth())o+=`<text x="${r3(X(i))}" y="${r3(Hh-.05)}" font-size=".1" fill="#7d8c8f">${x.t.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</text>`});
- const wi=new Map(w.map((x,i)=>[x.k,i]));let open=null;
- [...m.trades].reverse().forEach(t=>{const i=wi.has(t.k)?wi.get(t.k):(t.t<w[0].t?0:null);if(t.side==='C')open=i;else{const j=i??w.length-1;if(open!=null)o+=`<rect x="${r3(X(open))}" y="${pt}" width="${r3(Math.max(0,X(j)-X(open)))}" height="${r3(ih)}" fill="#3ecf8e" opacity=".09"/>`;open=null}});
- if(m.qty&&open!=null)o+=`<rect x="${r3(X(open))}" y="${pt}" width="${r3(X(w.length-1)-X(open))}" height="${r3(ih)}" fill="#3ecf8e" opacity=".09"/>`;
- const up=[],dn=[],ml=[];w.forEach((x,i)=>{const v=mmAt(m,i+o0);if(v!=null){up.push(r3(X(i))+','+r3(Y(v*(1+m.band))));dn.unshift(r3(X(i))+','+r3(Y(v*(1-m.band))));ml.push(r3(X(i))+','+r3(Y(v)))}});
- if(ml.length)o+=(m.band?`<polygon points="${up.concat(dn).join(' ')}" fill="#e9b949" opacity=".14"/>`:'')+`<polyline points="${ml.join(' ')}" fill="none" stroke="#e9b949" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`;
- const line=w.map((x,i)=>r3(X(i))+','+r3(Y(x.c)));
- o+=`<polygon points="${r3(X(0))},${r3(pt+ih)} ${line.join(' ')} ${r3(X(w.length-1))},${r3(pt+ih)}" fill="url(#area)"/><polyline points="${line.join(' ')}" fill="none" stroke="#dff5f2" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
- m.trades.forEach(t=>{const i=wi.get(t.k);if(i==null)return;const x=X(i),y=Y(w[i].c);o+=t.side==='C'?`<path d="M${r3(x)} ${r3(y+.05)}l.06 .1h-.12z" fill="#3ecf8e"/>`:`<path d="M${r3(x)} ${r3(y-.05)}l.06 -.1h-.12z" fill="#ef5350"/>`});
- const L=m.d.length,mmL=mmAt(m,L-1);if(!m.qty&&mmL&&m.band){const y=Y(mmL*(1+m.band));o+=`<line x1="${pl}" x2="${pl+iw}" y1="${r3(y)}" y2="${r3(y)}" stroke="#e9b949" stroke-dasharray="4 4" stroke-opacity=".7" vector-effect="non-scaling-stroke"/><text x="${r3(pl+iw-.04)}" y="${r3(y-.04)}" font-size=".1" fill="#e9b949" text-anchor="end">compra acima de ${f(mmL*(1+m.band))}</text>`}
+ const N=m.intraday?96:90,{D,o0,lo,hi}=janela(m,N),n=D.length,pl=.14,pr=.8,pt=.44,pb=.2,iw=W-pl-pr,ih=Hh-pt-pb;
+ const X=i=>pl+iw*i/(n-1),Y=v=>pt+(hi-v)/(hi-lo)*ih,f=v=>v>=1e4?(v/1e3).toFixed(1).replace('.',',')+' mil':v.toFixed(0),r3=v=>v.toFixed(3);
+ const ch=(m.price||D[n-1].c)/D[0].c-1;let o='';
+ o+=`<text x="${pl}" y=".25" font-size=".17" font-weight="700" fill="#e9b949" font-family="Chakra Petch">${esc(m.par)}</text><text x="${pl+.95}" y=".25" font-size=".12" fill="#7d8c8f">${m.intraday?'últimas 24 h · velas 15 min':'90 dias'} · <tspan fill="${ch>=0?'#3ecf8e':'#ef5350'}">${pct(ch)}</tspan></text>`;
+ o+=`<text x="${W-.12}" y=".25" font-size=".17" font-weight="700" fill="#e8f0f1" text-anchor="end" font-family="Chakra Petch">${esc(brl(m.price,0))}</text>`;
+ if(m.fast)o+=`<text x="${pl}" y=".38" font-size=".09" fill="#2bb5a8">— ${esc(m.fastName)}</text><text x="${pl+.55}" y=".38" font-size=".09" fill="#e9b949">— ${esc(m.linha)}</text>`;
+ for(let g=0;g<=3;g++){const v=lo+(hi-lo)*g/3,y=Y(v);o+=`<line x1="${pl}" x2="${pl+iw}" y1="${r3(y)}" y2="${r3(y)}" stroke="#fff" stroke-opacity=".07" vector-effect="non-scaling-stroke"/><text x="${r3(pl+iw+.06)}" y="${r3(y+.04)}" font-size=".1" fill="#7d8c8f">${f(v)}</text>`}
+ D.forEach((x,i)=>{const lb=tickLabel(m,D,i);if(lb)o+=`<text x="${r3(X(i))}" y="${r3(Hh-.05)}" font-size=".1" fill="#7d8c8f">${esc(lb)}</text>`});
+ let open=null;[...m.trades].reverse().forEach(t=>{const i=tradeIdx(m,t,o0,n)??(t.t<D[0].t?0:null);if(t.side==='C')open=i;else{const j=i??n-1;if(open!=null)o+=`<rect x="${r3(X(open))}" y="${pt}" width="${r3(Math.max(0,X(j)-X(open)))}" height="${r3(ih)}" fill="#3ecf8e" opacity=".1"/>`;open=null}});
+ if(m.qty&&open!=null)o+=`<rect x="${r3(X(open))}" y="${pt}" width="${r3(X(n-1)-X(open))}" height="${r3(ih)}" fill="#3ecf8e" opacity=".1"/>`;
+ const up=[],dn=[],ml=[],fl=[];D.forEach((x,i)=>{const v=mmAt(m,i+o0),q=fastAt(m,i+o0);if(v!=null){up.push(r3(X(i))+','+r3(Y(v*(1+m.band))));dn.unshift(r3(X(i))+','+r3(Y(v*(1-m.band))));ml.push(r3(X(i))+','+r3(Y(v)))}if(q!=null)fl.push(r3(X(i))+','+r3(Y(q)))});
+ if(m.band&&ml.length)o+=`<polygon points="${up.concat(dn).join(' ')}" fill="#e9b949" opacity=".14"/>`;
+ const line=D.map((x,i)=>r3(X(i))+','+r3(Y(x.c)));
+ o+=`<polygon points="${r3(X(0))},${r3(pt+ih)} ${line.join(' ')} ${r3(X(n-1))},${r3(pt+ih)}" fill="url(#area)"/><polyline points="${line.join(' ')}" fill="none" stroke="#dff5f2" stroke-opacity="${m.fast?.55:1}" stroke-width="${m.fast?1.4:2}" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+ if(ml.length)o+=`<polyline points="${ml.join(' ')}" fill="none" stroke="#e9b949" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+ if(fl.length)o+=`<polyline points="${fl.join(' ')}" fill="none" stroke="#2bb5a8" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+ cruzamentos(m,o0,o0+n-1).forEach(([i,d])=>{const x=X(i-o0),y=Y(mmAt(m,i));o+=`<circle cx="${r3(x)}" cy="${r3(y)}" r=".05" fill="none" stroke="${d==='up'?'#3ecf8e':'#ef5350'}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`});
+ m.trades.forEach(t=>{const i=tradeIdx(m,t,o0,n);if(i==null)return;const x=X(i),y=Y(D[i].c);o+=t.side==='C'?`<path d="M${r3(x)} ${r3(y+.05)}l.06 .1h-.12z" fill="#3ecf8e"/>`:`<path d="M${r3(x)} ${r3(y-.05)}l.06 -.1h-.12z" fill="#ef5350"/>`});
+ const mmL=mmAt(m,m.d.length-1);if(!m.qty&&mmL&&m.band){const y=Y(mmL*(1+m.band));o+=`<line x1="${pl}" x2="${pl+iw}" y1="${r3(y)}" y2="${r3(y)}" stroke="#e9b949" stroke-dasharray="4 4" stroke-opacity=".7" vector-effect="non-scaling-stroke"/><text x="${r3(pl+iw-.04)}" y="${r3(y-.04)}" font-size=".1" fill="#e9b949" text-anchor="end">compra acima de ${f(mmL*(1+m.band))}</text>`}
  if(m.qty&&m.stop&&m.stop>lo){const y=Y(m.stop);o+=`<line x1="${pl}" x2="${pl+iw}" y1="${r3(y)}" y2="${r3(y)}" stroke="#ef5350" stroke-dasharray="4 4" stroke-opacity=".8" vector-effect="non-scaling-stroke"/><text x="${pl+.04}" y="${r3(y-.04)}" font-size=".1" fill="#ef5350">stop</text>`}
- if(m.price){const y=Y(m.price);o+=`<circle cx="${r3(X(w.length-1))}" cy="${r3(y)}" r=".04" fill="#dff5f2"/><rect x="${r3(pl+iw+.03)}" y="${r3(y-.08)}" width=".7" height=".16" rx=".03" fill="#dff5f2"/><text x="${r3(pl+iw+.38)}" y="${r3(y+.04)}" font-size=".1" font-weight="700" fill="#081012" text-anchor="middle">${f(m.price)}</text>`}
+ if(m.price){const y=Y(m.price);o+=`<circle cx="${r3(X(n-1))}" cy="${r3(y)}" r=".04" fill="#dff5f2"/><rect x="${r3(pl+iw+.03)}" y="${r3(y-.08)}" width=".74" height=".16" rx=".03" fill="#dff5f2"/><text x="${r3(pl+iw+.4)}" y="${r3(y+.04)}" font-size=".1" font-weight="700" fill="#081012" text-anchor="middle">${f(m.price)}</text>`}
  el.innerHTML=o}
 
 function monitors(k){const m=MK[k];if(!m)return;const w=m.d.slice(-30).map(x=>x.c);if(m.price)w.push(m.price);
  const g0=$(`mon-${k}-0`),g1=$(`mon-${k}-1`),g2=$(`mon-${k}-2`);if(!g0||w.length<2)return;
- const lo=Math.min(...w),hi=Math.max(...w),up=w[w.length-1]>=w[0];
- g0.innerHTML=`<polyline points="${w.map((v,i)=>(.03+i*.46/(w.length-1)).toFixed(3)+','+(.3-(v-lo)/((hi-lo)||1)*.24).toFixed(3)).join(' ')}" fill="none" stroke="${up?'#3ecf8e':'#ef5350'}" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`;
- const rets=m.d.slice(-15).map((x,i,a)=>i?x.c/a[i-1].c-1:0).slice(1),mx=Math.max(...rets.map(Math.abs))||1;
- g1.innerHTML=`<line x1=".03" x2=".49" y1=".17" y2=".17" stroke="#fff" stroke-opacity=".15" vector-effect="non-scaling-stroke"/>`+rets.map((r,i)=>{const h=Math.abs(r)/mx*.13;return `<rect x="${(.04+i*.032).toFixed(3)}" y="${(r>=0?.17-h:.17).toFixed(3)}" width=".022" height="${h.toFixed(3)}" fill="${r>=0?'#3ecf8e':'#ef5350'}"/>`}).join('');
+ const lo=Math.min(...w),hi=Math.max(...w),up=w[w.length-1]>=w[0],L=m.d.length;
+ g0.innerHTML=`<polyline points="${w.map((v,i)=>(.03+i*.48/(w.length-1)).toFixed(3)+','+(.3-(v-lo)/((hi-lo)||1)*.24).toFixed(3)).join(' ')}" fill="none" stroke="${up?'#3ecf8e':'#ef5350'}" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`;
+ if(m.fast){const a=m.fast.slice(-30),b=m.mm.slice(-30),vs=a.concat(b).filter(v=>v!=null),l2=Math.min(...vs),h2=Math.max(...vs),pl=arr=>arr.map((v,i)=>v==null?'':(.03+i*.48/(arr.length-1)).toFixed(3)+','+(.3-(v-l2)/((h2-l2)||1)*.24).toFixed(3)).filter(Boolean).join(' ');
+  g1.innerHTML=`<polyline points="${pl(b)}" fill="none" stroke="#e9b949" stroke-width="1.1" vector-effect="non-scaling-stroke"/><polyline points="${pl(a)}" fill="none" stroke="#2bb5a8" stroke-width="1.1" vector-effect="non-scaling-stroke"/>`}
+ else{const rets=m.d.slice(-15).map((x,i,a)=>i?x.c/a[i-1].c-1:0).slice(1),mx=Math.max(...rets.map(Math.abs))||1;
+  g1.innerHTML=`<line x1=".03" x2=".51" y1=".17" y2=".17" stroke="#fff" stroke-opacity=".15" vector-effect="non-scaling-stroke"/>`+rets.map((r,i)=>{const h=Math.abs(r)/mx*.13;return `<rect x="${(.04+i*.033).toFixed(3)}" y="${(r>=0?.17-h:.17).toFixed(3)}" width=".022" height="${h.toFixed(3)}" fill="${r>=0?'#3ecf8e':'#ef5350'}"/>`}).join('')}
  const c=m.qty?'#3ecf8e':'#2bb5a8';g2.innerHTML=`<rect x=".04" y=".04" width=".2" height=".06" rx=".02" fill="${c}"/>`+[.15,.2,.25].map((y,i)=>`<rect x=".04" y="${y}" width="${[.4,.3,.36][i]}" height=".025" fill="#fff" opacity=".25"/>`).join('')+(m.qty?`<rect x=".3" y=".04" width=".18" height=".06" rx=".02" fill="${m.aberto>=0?'#3ecf8e':'#ef5350'}" opacity=".8"/>`:'')}
 
+function hoje(){const d=diaBR(new Date()),list=[];ORDER.forEach(k=>{const m=MK[k];m.trades.forEach(t=>{if(t.side==='V'&&t.r!=null&&diaBR(t.t)===d)list.push({k,t:t.t,r:t.r,mot:t.mot,p:t.p})});if(m.qty)list.push({k,t:m.pos.t,r:m.aberto,aberto:true,p:m.pos.p})});return list.sort((a,b)=>b.t-a.t)}
 function tickClock(){const h=$('clkH'),mi=$('clkM');if(!h)return;const d=new Date(),am=(d.getMinutes()/60)*2*Math.PI,ah=((d.getHours()%12)+d.getMinutes()/60)/12*2*Math.PI;h.setAttribute('x2',(.38+Math.sin(ah)*.17).toFixed(3));h.setAttribute('y2',(.38-Math.cos(ah)*.17).toFixed(3));mi.setAttribute('x2',(.38+Math.sin(am)*.26).toFixed(3));mi.setAttribute('y2',(.38-Math.cos(am)*.26).toFixed(3))}
 setInterval(tickClock,30000);
 function renderRoom(){buildRoom();const fxOn=!CTRL.pausado;
  ORDER.slice(0,4).forEach(k=>{const m=MK[k],g=document.querySelector(`.bot[data-k="${k}"]`);if(!g)return;
-  const cls=stale(m)?'warn':!fxOn?'warn':m.qty?'pos':'';g.setAttribute('class',`bot ${cls}${k===mk?' sel':''}`);
-  g.querySelector('.st').textContent=stale(m)?'sem atualizar':!fxOn?'pausado':m.qty?`comprado ${money(m.aberto)}`:'no caixa · vigiando';
+  const cls=stale(m)||!fxOn?'warn':m.qty?'pos':'';g.setAttribute('class',`bot ${cls}${k===mk?' sel':''}${g.classList.contains('idle')?' idle':''}`);
   document.querySelectorAll('.scr-'+k).forEach(e=>e.setAttribute('stroke',m.qty?'#3ecf8e':stale(m)||!fxOn?'#f2b33d':'#2bb5a8'));
   document.querySelectorAll('.pool-'+k).forEach(e=>e.setAttribute('opacity',m.qty?1:0));document.querySelectorAll('.dglow-'+k).forEach(e=>e.setAttribute('fill',m.qty?'#3ecf8e':'#2bb5a8'));monitors(k)});
- WALLS.forEach((W,i)=>{const k=ORDER[i],el=$('wall'+i);if(!el)return;wallChart(el,k?MK[k]:null,W.w,W.h,k===mk);$('wallB'+i).setAttribute('stroke',k&&k===mk?'#e9b949':'#3d3628')});
- const bd=$('board');if(bd&&ORDER.length){const day=ORDER.reduce((a,k)=>a+MK[k].pnlDia,0),r=MK[ORDER[0]].risco||{},ord=ORDER.reduce((a,k)=>a+MK[k].tradesDia,0),mxo=Number(r.max_trades_dia)||3;
-  const lim=Number(r.perda_dia_reais)||2,meta=Number(r.meta_dia_reais)||5,x0=.16,x1=2.64,z=x0+(x1-x0)*lim/(lim+meta),cur=Math.max(-lim,Math.min(meta,day)),xc=x0+(x1-x0)*(cur+lim)/(lim+meta);
-  bd.innerHTML=`<text x=".16" y=".28" font-size=".14" fill="#7d8c8f">Resultado de hoje</text><text x="2.64" y=".28" font-size=".13" fill="${CTRL.pausado?'#f2b33d':'#3ecf8e'}" text-anchor="end">${CTRL.pausado?'pausado':'operando'}</text>
-  <text x=".16" y=".66" font-size=".34" font-weight="700" fill="${day>0?'#3ecf8e':day<0?'#ef5350':'#e8f0f1'}" font-family="Chakra Petch">${esc(money(day))}</text>
-  <rect x="${x0}" y=".8" width="${x1-x0}" height=".09" rx=".045" fill="#ffffff" opacity=".08"/><rect x="${Math.min(z,xc).toFixed(3)}" y=".8" width="${Math.abs(xc-z).toFixed(3)}" height=".09" fill="${day>=0?'#3ecf8e':'#ef5350'}"/><line x1="${z.toFixed(3)}" x2="${z.toFixed(3)}" y1=".75" y2=".94" stroke="#e8f0f1" stroke-width="1" vector-effect="non-scaling-stroke"/>
-  <text x="${x0}" y="1.05" font-size=".1" fill="#ef5350">−${esc(brl(lim))}</text><text x="${x1}" y="1.05" font-size=".1" fill="#3ecf8e" text-anchor="end">+${esc(brl(meta))}</text>
-  <text x=".16" y="1.3" font-size=".12" fill="#7d8c8f">Ordens</text>${Array.from({length:mxo},(_,i)=>`<circle cx="${(.75+i*.18).toFixed(2)}" cy="1.26" r=".06" fill="${i<ord?'#e9b949':'none'}" stroke="#e9b949" stroke-width="1" vector-effect="non-scaling-stroke"/>`).join('')}`}}
+ moveOps();
+ WALLS.forEach((W,i)=>{const k=ORDER[i],el=$('wall'+i);if(!el)return;wallChart(el,k?MK[k]:null,W.w,W.h);$('wallB'+i).setAttribute('stroke',k&&k===mk?'#e9b949':'#3d3628')});
+ const bd=$('board');if(bd&&ORDER.length){const L=hoje(),fech=L.filter(x=>!x.aberto),g=fech.filter(x=>x.r>0).length,p=fech.filter(x=>x.r<=0).length,tot=L.reduce((a,x)=>a+x.r,0),f=faseAgora(MK[ORDER[0]]);
+  let o=`<text x=".14" y=".22" font-size=".13" font-weight="700" fill="#e9b949" font-family="Chakra Petch">Ganhos e perdas · hoje</text><text x="2.66" y=".22" font-size=".11" fill="${f==='aberto'?'#3ecf8e':'#f2b33d'}" text-anchor="end">${f==='aberto'?'expediente':f==='almoco'?'almoço':'fechado'}</text>`;
+  o+=L.length?L.slice(0,5).map((x,i)=>{const y=.42+i*.165;return `<text x=".14" y="${y.toFixed(3)}" font-size=".1" fill="#8ea2a7">${hhmm(x.t)}</text><text x=".55" y="${y.toFixed(3)}" font-size=".1" fill="#e8f0f1">${esc(x.k)}${x.aberto?' (aberta)':''}</text><text x="2.66" y="${y.toFixed(3)}" font-size=".1" font-weight="700" fill="${x.r>0?'#3ecf8e':x.r<0?'#ef5350':'#e8f0f1'}" text-anchor="end">${esc(money(x.r))}</text>`}).join(''):`<text x=".14" y=".55" font-size=".1" fill="#8ea2a7">Nenhuma operação hoje ainda</text>`;
+  o+=`<line x1=".14" x2="2.66" y1="1.2" y2="1.2" stroke="#fff" stroke-opacity=".12" vector-effect="non-scaling-stroke"/><text x=".14" y="1.34" font-size=".1" fill="#3ecf8e">${g} ganho${g===1?'':'s'}</text><text x=".75" y="1.34" font-size=".1" fill="#ef5350">${p} perda${p===1?'':'s'}</text><text x="2.66" y="1.35" font-size=".14" font-weight="700" fill="${tot>0?'#3ecf8e':tot<0?'#ef5350':'#e8f0f1'}" text-anchor="end" font-family="Chakra Petch">${esc(money(tot))}</text>`;
+  bd.innerHTML=o}}
 
-/* ---------- gráfico ---------- */
+/* ---------- gráfico grande ---------- */
 function drawChart(){const s=$('chart'),W=s.clientWidth,Hh=s.clientHeight;if(!W)return;const m=mk&&MK[mk];
  if(!m||m.d.length<2){s.innerHTML=`<text x="${W/2}" y="${Hh/2}" fill="#6f858a" font-size="14" text-anchor="middle">${loaded?'O robô ainda não gravou o gráfico':'Entre para carregar os dados do robô'}</text>`;return}
- const n0=W<560?Math.max(0,m.d.length-110):0,D=m.d.slice(n0),n=D.length,pr=W<520?64:80,pl=4,pt=14,pb=24;
- let lo=Infinity,hi=-Infinity;D.forEach((x,i)=>{const v=mmAt(m,i+n0);lo=Math.min(lo,x.c);hi=Math.max(hi,x.c);if(v!=null){lo=Math.min(lo,v*(1-m.band));hi=Math.max(hi,v*(1+m.band))}});
- if(m.price){lo=Math.min(lo,m.price);hi=Math.max(hi,m.price)}const pad=(hi-lo)*.08||1;lo-=pad;hi+=pad;
+ const N=W<560?110:m.d.length,{D,o0,lo,hi}=janela(m,N),n=D.length,pr=W<520?64:80,pl=4,pt=14,pb=24;
  const X=i=>pl+(W-pl-pr)*i/(n-1),Y=v=>pt+(hi-v)/(hi-lo)*(Hh-pt-pb),f0=v=>brl(v,0).replace('R$','').trim();
  let o='';
  for(let g=0;g<=4;g++){const v=lo+(hi-lo)*g/4,y=Y(v);o+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="#262b2b"/><text x="${W-pr+8}" y="${y+4}" fill="#7d8c8f" font-size="11">${f0(v)}</text>`}
- D.forEach((x,i)=>{if(i&&x.t.getMonth()!==D[i-1].t.getMonth())o+=`<line x1="${X(i)}" x2="${X(i)}" y1="${pt}" y2="${Hh-pb}" stroke="#1f2424"/><text x="${X(i)+4}" y="${Hh-7}" fill="#7d8c8f" font-size="11">${x.t.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</text>`});
- const idx=new Map(D.map((x,i)=>[x.k,i])),at=t=>idx.has(t.k)?idx.get(t.k):(t.t<D[0].t?0:(t.t>D[n-1].t?n-1:null));
- let open=null;[...m.trades].reverse().forEach(t=>{const i=at(t);if(t.side==='C')open=i;else{const j=i??n-1;if(open!=null)o+=`<rect x="${X(open)}" y="${pt}" width="${Math.max(0,X(j)-X(open))}" height="${Hh-pt-pb}" fill="#3ecf8e" opacity=".07"/>`;open=null}});
+ D.forEach((x,i)=>{const lb=tickLabel(m,D,i);if(lb)o+=`<line x1="${X(i)}" x2="${X(i)}" y1="${pt}" y2="${Hh-pb}" stroke="#1f2424"/><text x="${X(i)+4}" y="${Hh-7}" fill="#7d8c8f" font-size="11">${esc(lb)}</text>`});
+ let open=null;[...m.trades].reverse().forEach(t=>{const i=tradeIdx(m,t,o0,n)??(t.t<D[0].t?0:null);if(t.side==='C')open=i;else{const j=i??n-1;if(open!=null)o+=`<rect x="${X(open)}" y="${pt}" width="${Math.max(0,X(j)-X(open))}" height="${Hh-pt-pb}" fill="#3ecf8e" opacity=".07"/>`;open=null}});
  if(m.qty&&open!=null)o+=`<rect x="${X(open)}" y="${pt}" width="${X(n-1)-X(open)}" height="${Hh-pt-pb}" fill="#3ecf8e" opacity=".07"/>`;
- const up=[],dn=[],ml=[];D.forEach((x,i)=>{const v=mmAt(m,i+n0);if(v!=null){up.push(X(i).toFixed(1)+','+Y(v*(1+m.band)).toFixed(1));dn.unshift(X(i).toFixed(1)+','+Y(v*(1-m.band)).toFixed(1));ml.push(X(i).toFixed(1)+','+Y(v).toFixed(1))}});
- if(ml.length)o+=(m.band?`<polygon points="${up.concat(dn).join(' ')}" fill="#e9b949" opacity=".12"/>`:'')+`<polyline points="${ml.join(' ')}" fill="none" stroke="#e9b949" stroke-width="2" stroke-linejoin="round"/>`;
- o+=`<polyline points="${D.map((x,i)=>X(i).toFixed(1)+','+Y(x.c).toFixed(1)).join(' ')}" fill="none" stroke="#dff5f2" stroke-width="2" stroke-linejoin="round"/>`;
- m.trades.forEach(t=>{const i=idx.get(t.k);if(i==null)return;const x=X(i),y=Y(D[i].c);
-  o+=t.side==='C'?`<path d="M${x} ${y+7}l7 11h-14z" fill="#3ecf8e"/><text x="${x}" y="${y+31}" fill="#3ecf8e" font-size="11" font-weight="700" text-anchor="middle">C</text>`:`<path d="M${x} ${y-7}l7 -11h-14z" fill="#ef5350"/><text x="${x}" y="${y-22}" fill="#ef5350" font-size="11" font-weight="700" text-anchor="middle">V</text>`});
+ const up=[],dn=[],ml=[],fl=[];D.forEach((x,i)=>{const v=mmAt(m,i+o0),q=fastAt(m,i+o0);if(v!=null){up.push(X(i).toFixed(1)+','+Y(v*(1+m.band)).toFixed(1));dn.unshift(X(i).toFixed(1)+','+Y(v*(1-m.band)).toFixed(1));ml.push(X(i).toFixed(1)+','+Y(v).toFixed(1))}if(q!=null)fl.push(X(i).toFixed(1)+','+Y(q).toFixed(1))});
+ if(m.band&&ml.length)o+=`<polygon points="${up.concat(dn).join(' ')}" fill="#e9b949" opacity=".12"/>`;
+ o+=`<polyline points="${D.map((x,i)=>X(i).toFixed(1)+','+Y(x.c).toFixed(1)).join(' ')}" fill="none" stroke="#dff5f2" stroke-opacity="${m.fast?.5:1}" stroke-width="${m.fast?1.5:2}" stroke-linejoin="round"/>`;
+ if(ml.length)o+=`<polyline points="${ml.join(' ')}" fill="none" stroke="#e9b949" stroke-width="2" stroke-linejoin="round"/>`;
+ if(fl.length)o+=`<polyline points="${fl.join(' ')}" fill="none" stroke="#2bb5a8" stroke-width="2" stroke-linejoin="round"/>`;
+ cruzamentos(m,o0,o0+n-1).forEach(([i,d])=>{const x=X(i-o0),y=Y(mmAt(m,i));o+=`<circle cx="${x}" cy="${y}" r="5" fill="#0e1213" stroke="${d==='up'?'#3ecf8e':'#ef5350'}" stroke-width="2"/>`});
+ m.trades.forEach(t=>{const i=tradeIdx(m,t,o0,n);if(i==null)return;const x=X(i),y=Y(D[i].c);
+  o+=t.side==='C'?`<path d="M${x} ${y+8}l7 11h-14z" fill="#3ecf8e"/><text x="${x}" y="${y+32}" fill="#3ecf8e" font-size="11" font-weight="700" text-anchor="middle">C</text>`:`<path d="M${x} ${y-8}l7 -11h-14z" fill="#ef5350"/><text x="${x}" y="${y-23}" fill="#ef5350" font-size="11" font-weight="700" text-anchor="middle">V</text>`});
  if(m.qty&&m.stop&&m.stop>lo){const y=Y(m.stop);o+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="#ef5350" stroke-dasharray="5 5" stroke-opacity=".8"/><text x="${pl+6}" y="${y-6}" fill="#ef5350" font-size="11">stop ${f0(m.stop)}</text>`}
- const L=m.d.length,mmL=mmAt(m,L-1);if(!m.qty&&mmL&&m.band){const y=Y(mmL*(1+m.band));o+=`<text x="${W-pr-6}" y="${y-6}" fill="#e9b949" font-size="11" text-anchor="end">compra acima de ${f0(mmL*(1+m.band))}</text>`}
+ const mmL=mmAt(m,m.d.length-1);if(!m.qty&&mmL&&m.band){const y=Y(mmL*(1+m.band));o+=`<text x="${W-pr-6}" y="${y-6}" fill="#e9b949" font-size="11" text-anchor="end">compra acima de ${f0(mmL*(1+m.band))}</text>`}
  if(m.price){const ly=Y(m.price);o+=`<rect x="${W-pr+2}" y="${ly-10}" width="${pr-4}" height="20" rx="5" fill="#dff5f2"/><text x="${W-pr/2}" y="${ly+4}" fill="#081012" font-size="11" font-weight="700" text-anchor="middle">${f0(m.price)}</text>`}
  s.innerHTML=o}
 const ro=new ResizeObserver(drawChart);ro.observe($('chart'));
@@ -387,25 +439,34 @@ function renderFx(){document.querySelectorAll('.tab').forEach(b=>{const on=b.dat
  if(!m){$('fxTitle').textContent='Gráfico';$('fxSub').textContent=err||'Entre com o login do painel para ver os dados reais.';$('fxPrice').textContent='–';$('fxChg').textContent='';$('fxStats').innerHTML='';$('fxTrades').innerHTML='';drawChart();return}
  const L=m.d.length,last=L?m.d[L-1].c:m.price,ch=last?m.price/last-1:0,mm=L?mmAt(m,L-1):null,res=m.realizado+m.aberto;
  $('fxTitle').textContent=`Operador ${m.key} · ${m.par}`;
- $('fxSub').textContent=`${m.linha} com faixa de ${(m.band*100).toFixed(0)}% · velas ${m.tf==='1d'?'diárias':m.tf} · teto ${brl(m.cap)} · modo ${m.modo}`;
- $('lgMM').textContent=m.linha;
+ const tfTxt=m.tf==='1d'?'diárias':m.tf==='15m'?'de 15 min':m.tf;
+ $('fxSub').textContent=m.fast?`${m.fastName} × ${m.linha} · velas ${tfTxt} · ${m.fixo?brl(m.fixo)+' por operação':'teto '+brl(m.cap)} · expediente 9h–18h · modo ${m.modo}`:`${m.linha} com faixa de ${(m.band*100).toFixed(0)}% · velas ${tfTxt} · teto ${brl(m.cap)} · modo ${m.modo}`;
+ $('legend').innerHTML=(m.fast?`<span><i style="background:#dff5f2;opacity:.6"></i>Preço</span><span><i style="background:#2bb5a8"></i>${esc(m.fastName)}</span><span><i style="background:#e9b949"></i>${esc(m.linha)}</span><span><i style="border:2px solid #3ecf8e;background:none;width:8px;height:8px;border-radius:50%"></i>Cruzou para cima</span><span><i style="border:2px solid #ef5350;background:none;width:8px;height:8px;border-radius:50%"></i>Cruzou para baixo</span>`:`<span><i style="background:#dff5f2"></i>Preço</span><span><i style="background:#e9b949"></i>${esc(m.linha)}</span><span><i style="background:#e9b94955;height:10px"></i>Faixa de compra/venda</span>`)+`<span><i style="background:#3ecf8e33;height:10px"></i>Comprado</span><span><i style="background:#3ecf8e;height:8px;width:8px;border-radius:2px"></i>Compra</span><span><i style="background:#ef5350;height:8px;width:8px;border-radius:2px"></i>Venda</span>`;
  $('fxPrice').textContent=brl(m.price,0);$('fxChg').innerHTML=`<span class="${ch>=0?'up':'down'}">${pct(ch)}</span> desde o último fechamento`;
- $('fxStats').innerHTML=[['Resultado',money(res),res>0?'up':res<0?'down':''],['Posição',m.qty?'Comprado':'No caixa',m.qty?'up':''],['Stop',m.qty&&m.stop?brl(m.stop,0):'–',''],['Distância da média',mm?pct(m.price/mm-1):'–',''],['Hoje',`${money(m.pnlDia)} · ${m.tradesDia} ${m.tradesDia===1?'ordem':'ordens'}`,m.pnlDia>0?'up':m.pnlDia<0?'down':'']].map(([l,v,c])=>`<div><span>${l}</span><b class="${c}">${v}</b></div>`).join('');
- $('fxTrades').innerHTML=m.trades.length?m.trades.slice(0,8).map(t=>`<tr><td>${ddmm(t.t)}</td><td><span class="tag ${t.side==='C'?'c':'v'}">${t.side==='C'?'Compra':'Venda'}</span></td><td class="r">${brl(t.p,0)}</td><td class="r">${brl(t.v)}</td><td class="r ${t.r===null?'':t.r>=0?'up':'down'}">${t.r===null?'–':money(t.r)}</td><td>${esc(t.mot)}</td></tr>`).join(''):'<tr><td colspan="6">O robô ainda não fez nenhuma operação neste mercado.</td></tr>';
+ $('fxStats').innerHTML=[['Resultado',money(res),res>0?'up':res<0?'down':''],['Posição',m.qty?'Comprado':'No caixa',m.qty?'up':''],['Stop',m.qty&&m.stop?brl(m.stop,0):'–',''],m.fast?['EMA rápida − lenta',(()=>{const f=fastAt(m,L-1);return f!=null&&mm?pct(f/mm-1):'–'})(),(()=>{const f=fastAt(m,L-1);return f!=null&&mm?(f>mm?'up':'down'):''})()]:['Distância da média',mm?pct(m.price/mm-1):'–',''],['Hoje',`${money(m.pnlDia)} · ${m.tradesDia} ${m.tradesDia===1?'ordem':'ordens'}`,m.pnlDia>0?'up':m.pnlDia<0?'down':'']].map(([l,v,c])=>`<div><span>${l}</span><b class="${c}">${v}</b></div>`).join('');
+ $('fxTrades').innerHTML=m.trades.length?m.trades.slice(0,8).map(t=>`<tr><td>${ddmm(t.t)}${m.intraday?' '+hhmm(t.t):''}</td><td><span class="tag ${t.side==='C'?'c':'v'}">${t.side==='C'?'Compra':'Venda'}</span></td><td class="r">${brl(t.p,0)}</td><td class="r">${brl(t.v)}</td><td class="r ${t.r===null?'':t.r>=0?'up':'down'}">${t.r===null?'–':money(t.r)}</td><td>${esc(t.mot)}</td></tr>`).join(''):'<tr><td colspan="6">O robô ainda não fez nenhuma operação neste mercado.</td></tr>';
  drawChart()}
 
-function readMarket(m){const L=m.d.length,mm=L?mmAt(m,L-1):null;if(!mm)return 'Ainda sem média calculada no gráfico gravado.';const b=(m.band*100).toFixed(0);
+function readMarket(m){
+ if(m.fast){const L=m.d.length,f=fastAt(m,L-1),sl=mmAt(m,L-1),R=m.regras||{},et=m.ind&&m.ind.ema_tendencia,rsi=m.ind&&m.ind.rsi,fase=faseAgora(m);
+  if(f==null||sl==null)return 'Ainda sem as médias calculadas.';const acima=f>sl;
+  if(m.qty)return `Comprado a ${brl(m.pos.p,0)} (${money(m.aberto)} agora). A ${esc(m.fastName)} está ${acima?'acima':'abaixo'} da ${esc(m.linha)}. Vende quando ela cruzar para baixo, se bater o stop de ${brl(m.stop,0)} ou às 18h.`;
+  const falta=[];if(!acima)falta.push(`a ${esc(m.fastName)} cruzar a ${esc(m.linha)} para cima (hoje está ${pct(f/sl-1).replace('-','−')} abaixo)`);if(et!=null&&m.price<=et)falta.push(`o preço passar da EMA ${R.ema_tendencia||200} (${brl(et,0)})`);if(rsi!=null&&(rsi<(R.rsi_min??45)||rsi>(R.rsi_max??70)))falta.push(`o RSI voltar para ${R.rsi_min??45}–${R.rsi_max??70} (está ${rsi.toFixed(0)})`);
+  const pre=fase==='almoco'?'Em horário de almoço: não abre posição até 13h. ':fase==='fechado'?'Fora do expediente: volta às 9h. ':'';
+  return pre+(acima&&!falta.length?`A ${esc(m.fastName)} já está acima da ${esc(m.linha)}. O robô só compra no momento do cruzamento, então espera o próximo.`:`No caixa. Para comprar falta ${falta.join(', ')}.`)}const L=m.d.length,mm=L?mmAt(m,L-1):null;if(!mm)return 'Ainda sem média calculada no gráfico gravado.';const b=(m.band*100).toFixed(0);
  if(m.qty)return `Comprado a ${brl(m.pos.p,0)} (${money(m.aberto)} agora). Vende se o dia fechar abaixo de ${brl(mm*(1-m.band),0)} (média −${b}%)${m.stop?` ou se o preço bater o stop de ${brl(m.stop,0)}`:''}.`;
  const g=mm*(1+m.band);return m.price<g?`No caixa. Compra se o dia fechar acima de ${brl(g,0)} (média +${b}%). Falta subir ${pct(g/m.price-1).replace('+','')}.`:`No caixa, mas o preço já está acima de ${brl(g,0)}. Se o dia fechar assim, o robô compra na próxima checagem.`}
 
 function renderPanel(){const m=mk&&MK[mk];
  if(!m){$('panel').innerHTML=`<h2>Robô Foxbit</h2><div class="diag">${esc(err||'Entre com o login do painel do robô para ver os dados reais.')}</div><div class="acts"><button id="bLogin" class="pri">Entrar</button></div>`;return}
  const L=m.d.length,mm=L?mmAt(m,L-1):null,confirmando=Date.now()-conf<4000,fxOn=!CTRL.pausado;
- const chip=stale(m)?['Sem atualizar há mais de 45 min','warn']:!fxOn?['Pausado','warn']:m.qty?['Comprado','ok']:['No caixa · esperando sinal','teal'];
+const fz=faseAgora(m);
+ const chip=!m.qty&&fz!=='aberto'&&!stale(m)&&fxOn?[fz==='almoco'?'Almoço (12h–13h)':'Fora do expediente','warn']:stale(m)?['Sem atualizar há mais de 45 min','warn']:!fxOn?['Pausado','warn']:m.qty?['Comprado','ok']:['No caixa · esperando sinal','teal'];
  $('panel').innerHTML=`<h2>Operador ${esc(m.key)}</h2><div class="sub">${esc(m.par)} · Foxbit · atualizou ${ago(m.upd)}</div>
  <span class="chip ${chip[1]}">${chip[0]}</span>
- <div class="kv"><div><span>Preço agora</span><b>${brl(m.price,0)}</b></div><div><span>${esc(m.linha)}</span><b>${mm?brl(mm,0):'–'}</b></div>
- <div><span>${m.qty?'Vende abaixo de':'Compra acima de'}</span><b>${mm?brl(mm*(m.qty?1-m.band:1+m.band),0):'–'}</b></div><div><span>${m.qty?'Stop':'Teto deste robô'}</span><b>${m.qty&&m.stop?brl(m.stop,0):brl(m.cap)}</b></div></div>
+ <div class="kv">${m.fast?`<div><span>Preço agora</span><b>${brl(m.price,0)}</b></div><div><span>${esc(m.fastName)} / ${esc(m.linha)}</span><b>${(()=>{const f=fastAt(m,L-1);return f!=null&&mm?(f>mm?'acima':'abaixo'):'–'})()}</b></div>
+ <div><span>${m.qty?'Stop':'RSI'}</span><b>${m.qty&&m.stop?brl(m.stop,0):m.ind&&m.ind.rsi!=null?m.ind.rsi.toFixed(0):'–'}</b></div><div><span>Por operação</span><b>${m.fixo?brl(m.fixo):brl(m.cap)}</b></div>`:`<div><span>Preço agora</span><b>${brl(m.price,0)}</b></div><div><span>${esc(m.linha)}</span><b>${mm?brl(mm,0):'–'}</b></div>
+ <div><span>${m.qty?'Vende abaixo de':'Compra acima de'}</span><b>${mm?brl(mm*(m.qty?1-m.band:1+m.band),0):'–'}</b></div><div><span>${m.qty?'Stop':'Teto deste robô'}</span><b>${m.qty&&m.stop?brl(m.stop,0):brl(m.cap)}</b></div>`}</div>
  <div class="diag"><b>Leitura:</b> ${fxOn?readMarket(m):'Robô pausado: não abre posição nova, só cuida do stop do que já está aberto.'}</div>
  <div class="acts"><button id="bFx" class="${confirmando?'pri':fxOn?'danger':''}">${confirmando?(fxOn?'Toque de novo para pausar':'Toque de novo para retomar'):(fxOn?'Pausar robô':'Retomar robô')}</button></div>
  <div class="sub" style="margin-top:8px">A pausa vale para todos os mercados a partir do próximo ciclo (~15 min).</div>`}
@@ -418,9 +479,18 @@ function renderCheck(){if(!ORDER.length){$('check').innerHTML=`<li class="w"><i>
   [!CTRL.pausado,'Não está pausado',CTRL.pausado?'Toque em Retomar robô para voltar a abrir posições':'pode abrir posições novas'],
   [livre>0||ms.some(m=>m.qty)?(minLog?'w':true):false,'Saldo na Foxbit',`livre ${brl(livre)} · teto ${ms.map(m=>`${m.key} ${brl(m.cap)}`).join(', ')}${minLog?' · o log avisou ordem abaixo do mínimo da corretora':''}`],
   [day>-(Number(r.perda_dia_reais)||Infinity)&&day<(Number(r.meta_dia_reais)||Infinity)&&ord<(Number(r.max_trades_dia)||Infinity),'Limites do dia livres',`hoje ${money(day)} · ${ord} de ${Number(r.max_trades_dia)||0} ordens`],
+  [faseAgora(ms[0])==='aberto'?true:'w','Expediente',{aberto:'aberto até as 18h',almoco:'almoço: sem entradas até 13h',fechado:'fechado: volta às 9h (o robô não abre posições)'}[faseAgora(ms[0])]],
   [lastErr?'w':true,'Sem erros recentes no log',lastErr?`${hhmm(lastErr.t)}: ${lastErr.msg}`:'nenhum ERROR nas últimas mensagens'],
-  [ms.some(m=>m.qty)?true:'w','Sinal de entrada',ms.map(m=>{const L=m.d.length,mm=L?mmAt(m,L-1):null;return m.qty?`${m.key} comprado`:mm?`${m.key} falta ${pct(mm*(1+m.band)/m.price-1).replace('+','')}`:`${m.key} sem média`}).join(' · ')]];
+  [ms.some(m=>m.qty)?true:'w','Sinal de entrada',ms.map(m=>{const L=m.d.length,mm=L?mmAt(m,L-1):null;if(m.qty)return `${m.key} comprado`;if(m.fast){const f=fastAt(m,L-1);return f!=null&&mm?`${m.key}: EMA rápida ${f>mm?'acima':'abaixo'} da lenta`:`${m.key} sem médias`}return mm?`${m.key} falta ${pct(mm*(1+m.band)/m.price-1).replace('+','')}`:`${m.key} sem média`}).join(' · ')]];
  $('check').innerHTML=items.map(([ok,t,s])=>{const c=ok===true?'y':ok==='w'?'w':'n';return `<li class="${c}"><i>${c==='y'?'✓':c==='w'?'!':'×'}</i><span>${t}<small>${esc(s)}</small></span></li>`}).join('')}
+
+function renderQuadro(){const el=$('quadro');if(!ORDER.length){el.innerHTML='';return}
+ const L=hoje(),fech=L.filter(x=>!x.aberto),tot=L.reduce((a,x)=>a+x.r,0),g=fech.filter(x=>x.r>0).length,p=fech.filter(x=>x.r<=0).length;
+ const dias=[];for(let i=6;i>=0;i--){const d=new Date(Date.now()-i*864e5),k=diaBR(d);let v=0,n=0;ORDER.forEach(q=>MK[q].trades.forEach(t=>{if(t.side==='V'&&t.r!=null&&diaBR(t.t)===k){v+=t.r;n++}}));dias.push({d,v,n})}
+ const mx=Math.max(...dias.map(x=>Math.abs(x.v)),.01);
+ el.innerHTML=`<div class="kv" style="margin-top:10px"><div><span>Ganhos hoje</span><b class="up">${g}</b></div><div><span>Perdas hoje</span><b class="down">${p}</b></div><div style="grid-column:1/-1"><span>Saldo de hoje (fechadas + abertas)</span><b class="${tot>0?'up':tot<0?'down':''}">${money(tot)}</b></div></div>
+ <ul class="feed">${L.length?L.slice(0,8).map(x=>`<li><time>${hhmm(x.t)}</time><span><i class="dot" style="background:${x.r>0?'var(--ok)':x.r<0?'var(--crit)':'var(--mute)'}"></i>${esc(x.k)} ${x.aberto?'(aberta)':esc(x.mot)} · <b class="${x.r>0?'up':x.r<0?'down':''}">${money(x.r)}</b></span></li>`).join(''):'<li><time></time><span>Nenhuma operação hoje ainda.</span></li>'}</ul>
+ <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:12px;align-items:end;height:70px">${dias.map(x=>`<div title="${ddmm(x.d)}: ${money(x.v)}" style="display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="height:${Math.max(2,Math.abs(x.v)/mx*48)}px;background:${x.v>0?'var(--ok)':x.v<0?'var(--crit)':'#3a4446'};border-radius:4px"></div><span style="font-size:11px;color:var(--mute);text-align:center;margin-top:4px">${x.d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','')}</span></div>`).join('')}</div>`}
 
 function renderLog(){const col={INFO:'var(--teal)',WARNING:'var(--warn)',ERROR:'var(--crit)'};
  $('feed').innerHTML=LOGS.length?LOGS.map(l=>`<li><time>${ddmm(l.t)} ${hhmm(l.t)}</time><span><i class="dot" style="background:${col[l.n]||'var(--mute)'}"></i>${esc(l.msg)}</span></li>`).join(''):`<li><time></time><span>${loaded?'Nenhuma mensagem ainda':'–'}</span></li>`}
@@ -429,7 +499,7 @@ function renderAll(){
  $('tabs').innerHTML=ORDER.map(k=>`<button class="tab" role="tab" data-k="${esc(k)}">${esc(MK[k].par)}</button>`).join('');
  const any=ORDER.some(k=>stale(MK[k]));$('liveDot').className=!loaded?'':any||CTRL.pausado?'warn':'on';
  $('liveTxt').textContent=!loaded?(err||'Conectando ao robô…'):`Dados reais · lidos às ${hhmm(lastLoad)} · atualiza sozinho a cada 1 min`;
- renderKpis();renderRoom();renderFx();renderPanel();renderCheck();renderLog()}
+ renderKpis();renderRoom();renderFx();renderPanel();renderCheck();renderQuadro();renderLog()}
 
 async function pausar(){const novo=!CTRL.pausado;if(Date.now()-conf>4000){conf=Date.now();renderPanel();setTimeout(renderPanel,4100);return}conf=0;
  try{await sb('robo_kv',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify({chave:'controle',valor:{pausado:novo,em:new Date().toISOString()},atualizado_em:new Date().toISOString()})});
