@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Estúdio Dev Coins RJ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: estúdio de desenvolvimento da cidade, animado mas organizado
+   IDEA: escritório isométrico de devs com quadro kanban na parede, cada dev trabalhando na tarefa da cidade
+   PICTURE: a sala com o quadro de tarefas, pôster do Rio, mesas com código na tela e o pessoal na rotina
+   COLOUR and TYPE: grafite quente com verde e amarelo de acento (Rio), status em cores fixas; Chakra Petch + IBM Plex Sans
+   LAYOUT: KPIs no topo, sala à esquerda, "precisa de você" e setores à direita, kanban embaixo */
+:root{color-scheme:dark;--bg:#0e1213;--panel:#151c1e;--panel2:#1a2326;--line:#263236;--ink:#e8f0f1;--mute:#8ea2a7;--ok:#3ecf8e;--warn:#f2b33d;--crit:#ef5350;--teal:#2bb5a8;--gold:#e9b949;--rio:#2fae5f}
+:root[data-theme=light],:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:radial-gradient(1100px 480px at 25% -10%,#173022 0,transparent 60%),var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3,.num{font-family:"Chakra Petch",sans-serif}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;padding:22px max(3vw,16px) 8px}
+h1{margin:0;font-size:clamp(26px,3.2vw,38px);line-height:1.05}h1 span{font-weight:500;color:var(--mute);font-size:.55em}
+.sub{color:var(--mute);font-size:13px}
+a.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);text-decoration:none;font-weight:600;font-size:14px}a.btn:hover{border-color:var(--gold)}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding:12px max(3vw,16px)}
+.k{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+.k b{display:block;font:700 clamp(20px,2.2vw,28px)/1.15 "Chakra Petch";white-space:nowrap}.k span{font-size:13px;color:var(--mute)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;padding:4px max(3vw,16px) 20px;align-items:start}
+.col{display:flex;flex-direction:column;gap:14px}
+.scene{background:radial-gradient(ellipse at 45% 45%,#1f2a22,#0c0f10 78%);border:1px solid var(--line);border-radius:18px;position:relative;overflow:hidden}
+.scene svg{display:block;width:100%;height:auto}.note{position:absolute;left:16px;bottom:12px;font-size:13px;color:var(--mute)}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:18px}
+.card h3{margin:0 0 4px;font-size:17px}
+.bar{height:7px;background:#0b1112;border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;border-radius:9px;background:var(--rio)}
+.setor{padding:10px 0;border-top:1px solid var(--line)}.setor:first-of-type{border-top:0}
+.setor b{display:flex;justify-content:space-between;gap:8px;font-weight:600}.setor b span{color:var(--mute);font-weight:500;font-size:13px;white-space:nowrap}
+.chip{display:inline-block;font:600 12px "IBM Plex Sans";padding:2px 9px;border-radius:99px;color:#081012;white-space:nowrap}
+.s-afazer{background:#3a4446;color:#dfe8e9}.s-fazendo{background:var(--warn)}.s-testar{background:#b58cf0}.s-pronto{background:var(--ok)}
+.need li{padding:8px 0;border-top:1px solid var(--line);font-size:14px}.need li small{display:block;color:var(--mute);font-size:13px}
+ul{list-style:none;margin:8px 0 0;padding:0}
+.kanban{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:0 max(3vw,16px) 32px}
+.kcol{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px}
+.kcol h3{display:flex;justify-content:space-between;margin:0 0 8px;font-size:16px}
+.tcard{background:#0f1516;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+.tcard b{display:block;font-size:14px;font-weight:600}.tcard small{display:block;color:var(--mute);font-size:13px;margin-top:4px}
+.tcard .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--mute)}
+.tag2{border:1px solid var(--line);border-radius:6px;padding:1px 6px}.tag2.me{border-color:var(--warn);color:var(--warn)}
+.bot{cursor:pointer;outline:none}
+.bot{--st:var(--teal)}.bot.pos{--st:var(--ok)}.bot.warn{--st:var(--warn)}
+.bot .ring{opacity:0;transition:opacity .2s}.bot.sel .ring,.bot:focus-visible .ring{opacity:1}
+.bot{transition:transform 3s ease-in-out}.bot .pose-stand,.bot .pose-rest{display:none}
+.bot[data-pose=stand] .pose-sit,.bot[data-pose=walk] .pose-sit,.bot[data-pose=rest] .pose-sit{display:none}
+.bot[data-pose=stand] .pose-stand,.bot[data-pose=walk] .pose-stand{display:inline}.bot[data-pose=rest] .pose-rest{display:inline}
+.bot .mug,.bot .plate{display:none}.bot[data-item=mug] .mug,.bot[data-item=plate] .plate{display:inline}.bot[data-pose=walk] .mug,.bot[data-pose=walk] .plate{display:none}
+.bot[data-pose=walk] .lg1{animation:step .35s infinite alternate}.bot[data-pose=walk] .lg2{animation:step .35s .175s infinite alternate}@keyframes step{to{transform:translateY(-3px)}}
+.bot .steam{animation:steam 2s infinite}@keyframes steam{50%{opacity:.2;transform:translateY(-2px)}}
+.bot.lab{--st:#b58cf0}.bot.council{--st:#e9b949}
+.bot.idle .hl,.bot.idle .hr{animation-duration:1.4s}
+.bot .hl{animation:type .28s ease-in-out infinite alternate}.bot .hr{animation:type .28s ease-in-out .14s infinite alternate}
+.bot .head{animation:look 7s ease-in-out infinite;transform-origin:1px -45px;transform-box:view-box}
+.bot.warn .hl,.bot.warn .hr{animation:none}.bot.warn .head{animation:none;transform:rotate(-8deg)}
+.bot.pos .lamp{animation:pulse 1.6s infinite}
+@keyframes type{to{transform:translateY(-1.6px)}}@keyframes look{0%,40%,100%{transform:none}48%,60%{transform:rotate(-7deg)}}@keyframes pulse{50%{opacity:.35}}
+.bot{--st:var(--rio)}.bot.idle{--st:var(--mute)}
+@media(prefers-reduced-motion:reduce){.bot *{animation:none!important}.bot{transition:none}}
+@media(max-width:1000px){main{grid-template-columns:minmax(0,1fr)}.kanban{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.kanban{grid-template-columns:minmax(0,1fr)}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.note{position:static;padding:0 14px 12px}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Estúdio Dev <span>· Coins RJ Roleplay</span></h1><div class="sub" id="sub">Carregando tarefas…</div></div>
+  <a class="btn" href="sala.html">Ir para o Escritório Foxbit</a>
+</header>
+<section class="kpis" id="kpis"></section>
+<main>
+  <div class="col">
+    <div class="scene">
+      <svg id="svg" viewBox="-300 -165 820 610" role="img" aria-label="Estúdio isométrico com a equipe de desenvolvimento da cidade">
+        <defs>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4"/></filter>
+          <radialGradient id="pool"><stop offset="0" stop-color="#f5d9a0" stop-opacity=".16"/><stop offset="1" stop-color="#f5d9a0" stop-opacity="0"/></radialGradient>
+          <linearGradient id="scr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a1213"/><stop offset="1" stop-color="#12201f"/></linearGradient>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f29b54"/><stop offset="1" stop-color="#fcd98b"/></linearGradient>
+        </defs>
+        <g id="static"></g><g id="bots"></g>
+      </svg>
+      <div class="note">Os devs mostram em que pé está cada tarefa; o código é escrito pelo Claude e testado por você no jogo</div>
+    </div>
+  </div>
+  <aside class="col">
+    <div class="card"><h3>Precisa de você</h3><div class="sub">O que trava a equipe até você fazer</div><ul class="need" id="need"></ul></div>
+    <div class="card"><h3>Setores da cidade</h3><div id="setores"></div></div>
+  </aside>
+</main>
+<section class="kanban" id="kanban"></section>
+<script>
+{
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
+const S=40,C=S*.866,H=S*.5,P=(x,y,z=0)=>[(x-y)*C,(x+y)*H-z*S];
+const pts=a=>a.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+const quad=(a,fill,extra='')=>`<polygon points="${pts(a)}" fill="${fill}" ${extra}/>`;
+const box=(x,y,w,d,h,c,z=0)=>quad([P(x,y,z+h),P(x+w,y,z+h),P(x+w,y+d,z+h),P(x,y+d,z+h)],c[0])+quad([P(x,y+d,z),P(x+w,y+d,z),P(x+w,y+d,z+h),P(x,y+d,z+h)],c[1])+quad([P(x+w,y,z),P(x+w,y+d,z),P(x+w,y+d,z+h),P(x+w,y,z+h)],c[2]);
+const onY=(x,y,z)=>{const [a,b]=P(x,y,z);return `matrix(${C},${H},0,${S},${a.toFixed(1)},${b.toFixed(1)})`};
+const onXr=(y,z)=>{const [a,b]=P(0,y,z);return `matrix(${C},${-H},0,${S},${a.toFixed(1)},${b.toFixed(1)})`};
+const shade=(h,k)=>'#'+[1,3,5].map(i=>Math.max(0,Math.min(255,Math.round(parseInt(h.substr(i,2),16)*k))).toString(16).padStart(2,'0')).join('');
+const esc=x=>String(x??'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+const agoraBR=()=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()).map(x=>[x.type,x.value]));return (+p.hour%24)*60+(+p.minute)};
+const ST={afazer:'A fazer',fazendo:'Fazendo',testar:'Testar no jogo',pronto:'Pronto'};
+function pessoa(k,name,L,label){const g=document.createElementNS(NS,'g');g.setAttribute('class','bot');g.dataset.k=k;g.dataset.pose='sit';g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label',label);
+  const tw=Math.max(name.length*7+26,150),dk=shade(L.shirt,.72),pants='#2b3440';
+  const head=`<rect x="-3" y="-45" width="6" height="5" fill="${L.skin}"/><g class="head"><circle cx="1" cy="-53" r="9" fill="${L.skin}"/><path d="M-8.3 -52 A9.3 9.3 0 0 1 9.6 -56 Q6 -50 6.5 -45 Q0 -43 -7 -46 Z" fill="${L.hair}"/><ellipse cx="7.6" cy="-51" rx="2.6" ry="4.6" fill="${L.skin}"/><path d="M-8 -53 Q0 -66 9 -55" stroke="#1d1f22" stroke-width="2" fill="none"/><ellipse cx="-8" cy="-52" rx="2.4" ry="3.4" fill="#1d1f22"/></g>`;
+  const torso=`<path d="M-11 -16 Q-13 -36 -7 -41 L7 -41 Q13 -36 11 -16 Z" fill="${L.shirt}"/><path d="M-7 -41 L7 -41 Q9 -38 9 -34 L-9 -34 Q-9 -38 -7 -41Z" fill="#fff" opacity=".12"/>`;
+  g.innerHTML=`<g class="mv"><ellipse cx="0" cy="0" rx="15" ry="6" fill="rgba(0,0,0,.4)"/><ellipse class="ring" cx="0" cy="0" rx="24" ry="9.5" fill="none" stroke="#e9b949" stroke-width="2"/>
+  <ellipse cx="0" cy="-1" rx="11" ry="4" style="fill:var(--st)" opacity=".4" filter="url(#glow)"/>
+  <g class="pose-sit"><g class="arms"><path d="M-8 -36 Q-4 -44 3 -47" stroke="${dk}" stroke-width="5.5" fill="none" stroke-linecap="round"/><path d="M8 -36 Q13 -41 17 -44" stroke="${dk}" stroke-width="5.5" fill="none" stroke-linecap="round"/><circle class="hl" cx="4" cy="-48" r="2.8" fill="${L.skin}"/><circle class="hr" cx="18" cy="-45" r="2.8" fill="${L.skin}"/></g>
+   ${torso}${head}<rect x="-11.5" y="-31" width="23" height="15" rx="5" fill="#23272b"/><rect x="-11.5" y="-31" width="23" height="4" rx="2" fill="#2f3439"/></g>
+  <g class="pose-stand"><g class="legs"><rect class="lg1" x="-6" y="-22" width="5" height="21" rx="2" fill="${pants}"/><rect class="lg2" x="1" y="-22" width="5" height="21" rx="2" fill="${pants}"/><ellipse cx="-3.5" cy="-1" rx="3.6" ry="1.8" fill="#151515"/><ellipse cx="3.5" cy="-1" rx="3.6" ry="1.8" fill="#151515"/></g>
+   <g transform="translate(0,-7)"><path d="M-9 -38 Q-12 -30 -11 -20" stroke="${dk}" stroke-width="5" fill="none" stroke-linecap="round"/>${torso.replace('-11 -16','-10 -16').replace('11 -16 Z','10 -16 Z')}${head}
+    <path d="M9 -38 Q13 -30 7 -27" stroke="${dk}" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="6" cy="-27" r="2.6" fill="${L.skin}"/>
+    <g class="mug"><rect x="2" y="-33" width="6" height="7" rx="1.2" fill="#f2efe9"/><path d="M8 -31 q3 1 0 3" stroke="#f2efe9" stroke-width="1.2" fill="none"/><path class="steam" d="M4 -36 q-2 -3 0 -6 q2 -3 0 -6" stroke="#fff" stroke-opacity=".5" stroke-width="1" fill="none"/></g>
+    <g class="plate"><ellipse cx="6" cy="-29" rx="7" ry="2.4" fill="#f2efe9"/><ellipse cx="5" cy="-30.5" rx="3.5" ry="1.4" fill="#c9733a"/><ellipse cx="8" cy="-30.6" rx="2" ry="1" fill="#5b9a4a"/></g></g></g>
+  <g class="pose-rest"><rect x="-9" y="-20" width="18" height="8" rx="3" fill="${pants}"/><rect x="-9" y="-14" width="7" height="13" rx="2.5" fill="${pants}"/><rect x="2" y="-14" width="7" height="13" rx="2.5" fill="${pants}"/>
+   <g transform="rotate(-6 0 -20)">${torso}<path d="M-9 -36 Q-12 -28 -9 -20" stroke="${dk}" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M9 -36 Q12 -28 9 -20" stroke="${dk}" stroke-width="5" fill="none" stroke-linecap="round"/>${head}</g></g>
+  <g class="tag" transform="translate(0,-90)"><rect x="${-tw/2}" y="-12" width="${tw}" height="34" rx="10" fill="rgba(12,11,9,.92)" style="stroke:var(--st)" stroke-opacity=".85"/><circle cx="${-tw/2+12}" cy="-1" r="3.5" style="fill:var(--st)" class="lamp"/><text x="4" y="2" fill="#e8f0f1" font-size="12" font-weight="600" text-anchor="middle">${esc(name)}</text><text class="st" x="0" y="16" fill="#8ea2a7" font-size="10.5" text-anchor="middle"></text></g></g>`;
+  return g}
+
+let D=null;
+const RX=12,RY=8.2,DESKS=[[1.4,2.7],[5.3,2.7],[1.4,5.0],[5.3,5.0]],SOFA=[[10.35,5.3],[10.35,6.2],[10.35,7.1],[9.6,7.6]],CAFE=[[10.2,1.25],[10.75,1.35],[9.65,1.3],[11.2,1.4]];
+const ROTINA=[{cafe:20,almoco:[720,780]},{cafe:40,almoco:[780,840]},{cafe:0,almoco:[720,780]},{cafe:50,almoco:[780,840]}];
+
+function sala(){let st='';const sh=(x,y,w,d,o=.45)=>quad([P(x-.08,y-.02),P(x+w+.12,y-.02),P(x+w+.12,y+d+.14),P(x-.08,y+d+.14)],'#000',`opacity="${o}" filter="url(#shadow)"`);
+ st+=quad([P(0,0),P(RX,0),P(RX,RY),P(0,RY)],'#34302a');
+ for(let j=0;j<RY/.5;j++){let x=(j%3)*.6;const y=j*.5;while(x<RX){const L=Math.min(RX-x,1.5+((j*5+Math.floor(x))%3)*.4);st+=quad([P(x,y),P(x+L,y),P(x+L,y+.5),P(x,y+.5)],['#37322b','#312c26','#3b352d'][(j+Math.floor(x*3))%3],'stroke="#28241f" stroke-width=".6"');x+=L}}
+ st+=quad([P(0,0,0),P(RX,0,0),P(RX,0,2.7),P(0,0,2.7)],'#23271f')+quad([P(0,0,0),P(0,RY,0),P(0,RY,2.7),P(0,0,2.7)],'#1d2019');
+ st+=quad([P(0,0,0),P(RX,0,0),P(RX,0,.14),P(0,0,.14)],'#12140f')+quad([P(0,0,0),P(0,RY,0),P(0,RY,.14),P(0,0,.14)],'#0f110d');
+ st+=quad([P(0,0,2.7),P(RX,0,2.7),P(RX,-.2,2.7),P(0,-.2,2.7)],'#3f4535')+quad([P(0,0,2.7),P(0,RY,2.7),P(-.2,RY,2.7),P(-.2,0,2.7)],'#373c2e');
+ // quadro kanban na parede do fundo
+ st+=`<g transform="${onY(.5,0,2.35)}"><rect x="-.07" y="-.07" width="7.14" height="1.84" rx=".05" fill="#0a0b08"/><rect width="7" height="1.7" rx=".04" fill="#f0ede4"/><g id="wallKanban"></g></g>`;
+ // pôster Coins RJ (pão de açúcar estilizado) na parede do fundo
+ st+=`<g transform="${onY(8.0,0,2.3)}"><rect x="-.06" y="-.06" width="2.32" height="1.62" fill="#0a0b08"/><rect width="2.2" height="1.5" fill="url(#sky)"/><path d="M0 1.5 L0 1.05 Q.35 .7 .55 1.0 Q.7 .45 .95 .55 Q1.1 .2 1.25 .62 L1.45 1.0 Q1.75 .8 2.2 1.1 L2.2 1.5Z" fill="#2f5a3a"/><path d="M1.12 .4 q.15 -.18 .3 -.04 L1.25 .62Z" fill="#244a2e"/><rect y="1.18" width="2.2" height=".32" fill="#2a78a8"/><text x="1.1" y=".28" font-size=".2" font-weight="700" fill="#1d2a1f" text-anchor="middle" font-family="Chakra Petch">COINS RJ</text><text x="1.1" y=".44" font-size=".11" fill="#1d2a1f" text-anchor="middle">ROLEPLAY</text></g>`;
+ // janela + quadro de setores na parede da esquerda
+ st+=`<g transform="${onXr(3.1,2.25)}"><rect x="-.06" y="-.06" width="2.32" height="1.52" fill="#3f4535"/><rect width="2.2" height="1.4" fill="url(#sky)"/><path d="M0 1.4 L0 .95 Q.4 .6 .7 .9 Q.95 .35 1.25 .5 L1.5 .95 Q1.8 .75 2.2 1.0 L2.2 1.4Z" fill="#355c3e"/><rect y="1.15" width="2.2" height=".25" fill="#2a78a8"/><line x1="1.1" y1="0" x2="1.1" y2="1.4" stroke="#3f4535" stroke-width=".05"/></g>`;
+ st+=`<g transform="${onXr(7.6,2.3)}"><rect x="-.06" y="-.06" width="3.62" height="1.62" rx=".05" fill="#0a0b08"/><rect width="3.5" height="1.5" rx=".03" fill="url(#scr)" stroke="#2fae5f" stroke-opacity=".5" stroke-width=".03"/><g id="wallSetores"></g></g>`;
+ // tapete e luz
+ st+=quad([P(.9,2.2),P(8.3,2.2),P(8.3,7.6),P(.9,7.6)],'#22302a')+quad([P(1.05,2.35),P(8.15,2.35),P(8.15,7.45),P(1.05,7.45)],'none','stroke="#35493f" stroke-width="1.2"');
+ const [a1,b1]=P(4.6,4.6);st+=`<ellipse cx="${a1}" cy="${b1}" rx="280" ry="120" fill="url(#pool)"/>`;
+ // mesas dos devs
+ const top=['#7a6350','#56473a','#67533f'],leg=['#2b2b2b','#1c1c1c','#242424'],monC=['#22282b','#121618','#1a1f22'];
+ DESKS.forEach(([x,y],n)=>{const w=2.3,d=.78;st+=sh(x,y,w,d,.5)+box(x+.06,y+.06,.06,.06,.42,leg)+box(x+w-.6,y+.08,.52,.62,.4,['#4d3f33','#3a2f26','#43372c'])+box(x+.06,y+d-.12,.06,.06,.42,leg)+box(x,y,w,d,.05,top,.42);
+  for(let j=0;j<3;j++){const mx=x+.14+j*.68;st+=box(mx+.24,y+.1,.12,.12,.02,monC,.47)+box(mx+.28,y+.12,.04,.04,.1,monC,.47)+box(mx,y+.08,.6,.05,.4,monC,.55)+`<g transform="${onY(mx+.03,y+.13,.92)}"><rect width=".54" height=".34" fill="#0b1210"/><g class="code" data-n="${n}" data-j="${j}"></g></g>`}
+  st+=box(x+.62,y+.44,.82,.2,.025,['#2a2d30','#1a1c1e','#222528'],.47)+box(x+1.9,y+.4,.11,.11,.13,['#f2efe9','#c9c3b8','#ddd7cc'],.47);
+  const [cx,cy]=P(x+1.05,y+1.2);st+=`<g transform="translate(${cx.toFixed(1)},${cy.toFixed(1)})"><ellipse cx="0" cy="-2" rx="10" ry="3.4" fill="#26292c"/><rect x="-1.6" y="-15" width="3.2" height="13" fill="#3a3e42"/><ellipse cx="0" cy="-16" rx="13" ry="5" fill="#2b2f33"/><rect x="-11.5" y="-31" width="23" height="15" rx="5" fill="#23272b"/></g>`});
+ // cadeira do diretor perto do quadro
+ {const [a,b]=P(8.9,3.0);st+=`<ellipse id="silvaGlow" cx="${a}" cy="${b}" rx="26" ry="11" fill="#f2b33d" opacity="0" filter="url(#glow)"/><g transform="translate(${a.toFixed(1)},${b.toFixed(1)})"><ellipse cx="0" cy="-2" rx="10" ry="3.4" fill="#26292c"/><rect x="-1.6" y="-15" width="3.2" height="13" fill="#3a3e42"/><ellipse cx="0" cy="-16" rx="13" ry="5" fill="#5a4a2a"/><rect x="-11.5" y="-31" width="23" height="15" rx="5" fill="#5a4a2a"/></g><g transform="translate(${a.toFixed(1)},${(b-46).toFixed(1)})"><rect x="-52" y="-11" width="104" height="20" rx="10" fill="rgba(12,11,9,.92)" stroke="#e9b949" stroke-opacity=".8"/><text x="0" y="3" fill="#e9b949" font-size="11" font-weight="600" text-anchor="middle">Silva · diretor</text></g>`}
+ // copa e descanso
+ st+=sh(9.6,.25,1.8,.5)+box(9.6,.25,1.8,.5,.85,['#4a3a2c','#3a2d22','#433426'])+box(9.8,.33,.36,.3,.42,['#2a2d30','#1a1c1e','#222528'],.85)+box(9.87,.33,.22,.04,.1,['#e9b949','#a88430','#c49a38'],1.05)+box(10.5,.35,.6,.3,.2,['#f2efe9','#c9c3b8','#ddd7cc'],.85);
+ st+=sh(10.7,4.8,.85,2.6)+box(11.15,4.8,.4,2.6,.75,['#3f6f6a','#2c514d','#365350'])+box(10.7,4.8,.85,2.6,.32,['#4b6d68','#33504c','#3d5c58'])+box(10.7,4.8,.85,.25,.55,['#3f6f6a','#2c514d','#365350'])+box(10.7,7.15,.85,.25,.55,['#3f6f6a','#2c514d','#365350']);
+ const plant=(x,y,s=1)=>{const [a,b]=P(x,y);return box(x-.18,y-.18,.36,.36,.3,['#8a6a4f','#6b513c','#7a5d45'])+`<ellipse cx="${a}" cy="${b-17*s}" rx="${15*s}" ry="${18*s}" fill="#2f7a4c"/><ellipse cx="${a-6*s}" cy="${b-25*s}" rx="${8*s}" ry="${9*s}" fill="#4ea06b"/>`};
+ st+=plant(.45,.45)+plant(7.7,.45,.8)+plant(.5,7.7,1.1)+plant(11.6,7.8);
+ $('static').innerHTML=st;
+ const bg=$('bots');bg.innerHTML='';
+ D.equipe.slice(0,4).forEach((e,n)=>{const g=pessoa('DEV-'+e.nome,e.nome,e.look,'Dev '+e.nome);g.dataset.dev=n;const r=g.querySelector('.tag rect'),tw=170;r.setAttribute('width',tw);r.setAttribute('x',-tw/2);g.querySelector('.tag circle').setAttribute('cx',-tw/2+12);g.appendChild(document.createElementNS(NS,'title'));e.at=null;bg.appendChild(g)})}
+
+function tarefaDe(nome){return D.tarefas.find(t=>t.dono===nome&&t.status==='fazendo')||D.tarefas.find(t=>t.dono===nome&&t.status==='testar')||D.tarefas.find(t=>t.dono===nome&&t.status==='afazer')}
+function mover(){const t0=agoraBR(),h=Math.floor(t0/60),mn=t0%60;
+ D.equipe.slice(0,4).forEach((e,n)=>{const g=document.querySelector(`.bot[data-dev="${n}"]`);if(!g)return;const R=ROTINA[n],tf=tarefaDe(e.nome);
+  const fora=h<9||h>=18,almoco=t0>=R.almoco[0]&&t0<R.almoco[1],cafe=!fora&&!almoco&&mn>=R.cafe&&mn<R.cafe+5;
+  const spot=fora?'sofa':almoco?'almoco':cafe?'cafe':'mesa',home=[DESKS[n][0]+1.05,DESKS[n][1]+1.2];
+  const xy=spot==='mesa'?home:spot==='cafe'?CAFE[n]:spot==='almoco'?[9.0+(n%2)*.7,5.6+Math.floor(n/2)*.9]:SOFA[n],pose=spot==='mesa'?'sit':spot==='sofa'?'rest':'stand',[x,y]=P(xy[0],xy[1]),mv=g.querySelector('.mv');e.xy=xy;
+  const flip=spot==='sofa'?' scale(-1,1)':'';
+  if(e.at!==spot){const first=e.at===null;e.at=spot;g.style.transition=first?'none':'';g.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;if(!first){g.dataset.pose='walk';clearTimeout(e.tw);e.tw=setTimeout(()=>{g.dataset.pose=pose;mv.style.transform=flip},3100)}else{g.dataset.pose=pose;mv.style.transform=flip}}
+  g.dataset.item=almoco?'plate':cafe?'mug':'';g.classList.toggle('idle',spot!=='mesa'||!tf);
+  const txt=fora?'fora do expediente':almoco?'almoço':cafe?'pausa para o café':tf?`${ST[tf.status]}: ${tf.titulo}`:'sem tarefa';
+  g.querySelector('.st').textContent=txt.length>30?txt.slice(0,29)+'…':txt;g.querySelector('title').textContent=`${e.nome} (${e.papel}): ${txt}`;
+  g.querySelector('.tag').setAttribute('transform',`translate(${spot==='mesa'?0:(n%2?60:-60)},-90)${flip}`);
+  document.querySelectorAll(`.code[data-n="${n}"]`).forEach(c=>{const j=+c.dataset.j,ativo=spot==='mesa';c.innerHTML=ativo?Array.from({length:6},(_,i)=>`<rect x="${(.04+((i*7+j*3)%4)*.04).toFixed(2)}" y="${(.04+i*.048).toFixed(3)}" width="${(.12+((i*5+j+n)%5)*.06).toFixed(2)}" height=".022" fill="${['#2fae5f','#e9b949','#5d8fe0','#c96fb5','#e8f0f1'][(i+j+n)%5]}" opacity=".85"/>`).join(''):'<rect x=".04" y=".14" width=".46" height=".03" fill="#fff" opacity=".08"/>'})});
+ [...document.querySelectorAll('#bots .bot')].sort((a,b)=>{const A=D.equipe[a.dataset.dev].xy||[0,0],B=D.equipe[b.dataset.dev].xy||[0,0];return (A[0]+A[1])-(B[0]+B[1])}).forEach(g=>$('bots').appendChild(g));
+ const need=D.tarefas.filter(t=>t.precisa_silva&&t.status!=='pronto').length,gl=$('silvaGlow');if(gl)gl.setAttribute('opacity',need?'.8':'0')}
+
+function render(){const T=D.tarefas,c=k=>T.filter(t=>t.status===k).length,pr=T.length?Math.round((c('pronto')+c('testar')*.5)/T.length*100):0,need=T.filter(t=>t.precisa_silva&&t.status!=='pronto');
+ $('sub').textContent=`${D.base} · ${D.equipe.length} devs · atualizado em ${new Date(D.atualizado_em).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'})}`;
+ $('kpis').innerHTML=[['Tarefas',T.length,''],['Fazendo',c('fazendo'),'color:var(--warn)'],['Testar no jogo',c('testar'),'color:#b58cf0'],['Prontas',c('pronto'),'color:var(--ok)'],['Cidade pronta',pr+'%','color:var(--rio)']].map(([l,v,s])=>`<div class="k"><b class="num" style="${s}">${v}</b><span>${l}</span></div>`).join('');
+ $('need').innerHTML=need.length?need.map(t=>`<li>${esc(t.titulo)}<small>${esc(t.detalhe)}</small></li>`).join(''):'<li>Nada travado por você agora.</li>';
+ const setores=[...new Set(T.map(t=>t.setor))];
+ $('setores').innerHTML=setores.map(s=>{const ts=T.filter(t=>t.setor===s),p=Math.round((ts.filter(t=>t.status==='pronto').length+ts.filter(t=>t.status==='testar').length*.5)/ts.length*100);return `<div class="setor"><b>${esc(s)}<span>${p}% · ${ts.length} tarefa${ts.length>1?'s':''}</span></b><div class="bar" style="margin-top:6px"><i style="width:${Math.max(2,p)}%"></i></div></div>`}).join('');
+ $('kanban').innerHTML=Object.entries(ST).map(([k,l])=>`<div class="kcol"><h3>${l}<span class="chip s-${k}">${c(k)}</span></h3>${T.filter(t=>t.status===k).map(t=>`<div class="tcard"><b>${esc(t.titulo)}</b><small>${esc(t.detalhe)}</small><div class="meta"><span class="tag2">${esc(t.setor)}</span><span class="tag2">${esc(t.dono)}</span>${t.precisa_silva?'<span class="tag2 me">precisa de você</span>':''}</div></div>`).join('')||'<div class="sub" style="margin-top:8px">Vazio</div>'}</div>`).join('');
+ const wk=$('wallKanban');if(wk){let o='';Object.entries(ST).forEach(([k,l],i)=>{const x=.12+i*1.72;o+=`<text x="${x}" y=".2" font-size=".13" font-weight="700" fill="#2a2a24" font-family="Chakra Petch">${l} (${c(k)})</text>`;
+   T.filter(t=>t.status===k).slice(0,5).forEach((t,j)=>{const col={afazer:'#fdf3a7',fazendo:'#ffd29a',testar:'#e2d2fb',pronto:'#c9f0d6'}[k];o+=`<rect x="${x}" y="${(.3+j*.27).toFixed(2)}" width="1.6" height=".22" rx=".02" fill="${col}"/><text x="${x+.05}" y="${(.44+j*.27).toFixed(2)}" font-size=".085" fill="#2a2a24">${esc(t.titulo.slice(0,34))}</text>`})});wk.innerHTML=o}
+ const ws=$('wallSetores');if(ws){let o=`<text x=".15" y=".22" font-size=".14" font-weight="700" fill="#2fae5f" font-family="Chakra Petch">Setores · cidade ${pr}% pronta</text>`;setores.slice(0,8).forEach((s,i)=>{const ts=T.filter(t=>t.setor===s),p=(ts.filter(t=>t.status==='pronto').length+ts.filter(t=>t.status==='testar').length*.5)/ts.length,y=.38+i*.135;o+=`<text x=".15" y="${(y+.06).toFixed(3)}" font-size=".085" fill="#c9d6d9">${esc(s)}</text><rect x="1.3" y="${(y-.01).toFixed(3)}" width="2" height=".07" rx=".03" fill="#fff" opacity=".1"/><rect x="1.3" y="${(y-.01).toFixed(3)}" width="${(2*Math.max(.02,p)).toFixed(3)}" height=".07" rx=".03" fill="#2fae5f"/>`});ws.innerHTML=o}}
+
+fetch('dev-tarefas.json',{cache:'no-store'}).then(r=>r.json()).then(j=>{D=j;sala();render();mover();setInterval(mover,20000)}).catch(e=>{$('sub').textContent='Não consegui carregar as tarefas: '+e.message});
+}
+</script>
+</body>
+</html>

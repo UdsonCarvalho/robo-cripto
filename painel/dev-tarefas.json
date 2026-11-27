@@ -1,0 +1,32 @@
+{
+  "atualizado_em": "2026-11-27T17:20:00Z",
+  "cidade": "Coins RJ Roleplay",
+  "base": "QBCore via txAdmin",
+  "equipe": [
+    {"nome": "Rafa", "papel": "scripts Lua e QBCore", "look": {"shirt": "#e0703c", "hair": "#2a1c14", "skin": "#c98d63"}},
+    {"nome": "Júlia", "papel": "mapas, favelas e MLOs", "look": {"shirt": "#4fb6a0", "hair": "#6b3a1e", "skin": "#e6b48f"}},
+    {"nome": "Téo", "papel": "veículos e garagens", "look": {"shirt": "#5d8fe0", "hair": "#151515", "skin": "#8d5a3b"}},
+    {"nome": "Gabi", "papel": "testes, regras e lançamento", "look": {"shirt": "#c96fb5", "hair": "#2b2018", "skin": "#f1c7a3"}}
+  ],
+  "tarefas": [
+    {"id": "repo", "setor": "Organização", "titulo": "Criar repositório privado da cidade no GitHub", "status": "fazendo", "dono": "Gabi", "precisa_silva": true, "detalhe": "Silva cria o repositório privado coins-rj-roleplay e adiciona aqui; todo código da cidade passa por lá com revisão."},
+    {"id": "inventario", "setor": "Organização", "titulo": "Levantar o que já está instalado no servidor", "status": "fazendo", "dono": "Rafa", "precisa_silva": true, "detalhe": "Silva manda a lista da pasta resources e o server.cfg (sem senhas e sem chave de licença)."},
+    {"id": "ptbr", "setor": "Base RJ", "titulo": "QBCore em português e dinheiro em R$", "status": "afazer", "dono": "Rafa", "detalhe": "Locale pt-BR, textos dos jobs, símbolo R$ na HUD e no celular."},
+    {"id": "placas", "setor": "Base RJ", "titulo": "Placas Mercosul e nomes de lugares do RJ", "status": "afazer", "dono": "Téo", "detalhe": "Formato de placa brasileira e blips com nomes cariocas."},
+    {"id": "spawn", "setor": "Base RJ", "titulo": "Spawn, prefeitura e empregos iniciais", "status": "afazer", "dono": "Rafa", "detalhe": "Ponto de chegada, documentos e primeiros empregos legais."},
+    {"id": "favela-mlo", "setor": "Favelas", "titulo": "Escolher MLOs de favela (gratuitos ou licenciados)", "status": "afazer", "dono": "Júlia", "detalhe": "Só mapas com permissão de uso; nada vazado (vazados costumam trazer backdoor)."},
+    {"id": "favela-zonas", "setor": "Favelas", "titulo": "Zonas, entradas e pontos de cada comunidade", "status": "afazer", "dono": "Júlia", "detalhe": "Definir territórios, acessos e pontos de interesse."},
+    {"id": "familias", "setor": "Famílias", "titulo": "Famílias/facções no qb-core (gangs.lua)", "status": "afazer", "dono": "Rafa", "detalhe": "Cargos, cores, roupas, baú e garagem de cada família."},
+    {"id": "territorio", "setor": "Famílias", "titulo": "Sistema de território e regras de guerra", "status": "afazer", "dono": "Gabi", "detalhe": "Regras de RP para conflitos, horários e limites, para não virar só tiroteio."},
+    {"id": "hospital", "setor": "Hospital", "titulo": "Hospital e SAMU (qb-ambulancejob)", "status": "afazer", "dono": "Rafa", "detalhe": "Cargos, salários em R$, leitos, tratamento e chamada pelo celular."},
+    {"id": "hospital-mlo", "setor": "Hospital", "titulo": "Mapa do hospital", "status": "afazer", "dono": "Júlia", "detalhe": "Usar ou adaptar o hospital da cidade com nome carioca."},
+    {"id": "pm", "setor": "Polícia", "titulo": "PMERJ e Polícia Civil (qb-policejob)", "status": "afazer", "dono": "Rafa", "detalhe": "Patentes, salários, armamento, algemas, multas e prisão."},
+    {"id": "viaturas", "setor": "Polícia", "titulo": "Viaturas e fardas brasileiras", "status": "afazer", "dono": "Téo", "detalhe": "Modelos com permissão de uso em FiveM; fardas como roupas addon."},
+    {"id": "concessionaria", "setor": "Carros", "titulo": "Concessionária e preços em R$ (qb-vehicleshop)", "status": "afazer", "dono": "Téo", "detalhe": "Categorias populares, motos e importados com preços equilibrados."},
+    {"id": "garagens", "setor": "Carros", "titulo": "Garagens, seguro e pátio (qb-garages)", "status": "afazer", "dono": "Téo", "detalhe": "Garagens públicas, de família e pátio da polícia."},
+    {"id": "carros-br", "setor": "Carros", "titulo": "Carros brasileiros (addon)", "status": "afazer", "dono": "Téo", "detalhe": "Gol, Uno, HB20, motos de entrega; só modelos com permissão para FiveM."},
+    {"id": "economia", "setor": "Economia", "titulo": "Salários e preços equilibrados", "status": "afazer", "dono": "Gabi", "detalhe": "Planilha de salários x preços para a economia não quebrar."},
+    {"id": "regras", "setor": "Lançamento", "titulo": "Regras da cidade, whitelist e Discord", "status": "afazer", "dono": "Gabi", "detalhe": "Regras de RP, formulário de whitelist e canais do Discord."},
+    {"id": "seguranca", "setor": "Lançamento", "titulo": "Segurança do servidor", "status": "afazer", "dono": "Gabi", "detalhe": "Permissões do txAdmin por pessoa, backup do banco, anticheat básico."}
+  ]
+}
