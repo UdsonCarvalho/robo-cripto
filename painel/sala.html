@@ -3,297 +3,157 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sala NOC</title>
+<title>Escritório Foxbit</title>
 <script src="config.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* VOICE: sala de operação à noite, calma, que só acende quando algo cai ou o robô opera
-   IDEA: um escritório isométrico onde cada serviço é um robô na sua mesa, mais a sala do robô cripto
-   PICTURE: a planta com sala cripto, salão de operações, telão, sala de incidente e robôs flutuando
-   COLOUR and TYPE: grafite quente + teal; verde/âmbar/vermelho só para status, dourado para o robô Foxbit; Chakra Petch + IBM Plex Sans
-   LAYOUT: KPIs no topo, sala e gráfico do robô à esquerda, painel e eventos à direita; empilha abaixo de 1000px */
-:root{color-scheme:dark;--bg:#0d1213;--panel:#151d1f;--panel2:#1a2427;--line:#263236;--ink:#e8f0f1;--mute:#8ea2a7;--teal:#2bb5a8;--ok:#3ecf8e;--warn:#f2b33d;--crit:#ef5350;--gold:#e9b949}
+/* VOICE: mesa de operação pessoal, calma e honesta: mostra o que o robô fez de verdade
+   IDEA: um escritório isométrico onde cada mercado (BTC, ETH) é um robô operador na sua mesa
+   PICTURE: a sala com o telão do gráfico real, o quadro do dia e os robôs que acendem verde quando estão comprados
+   COLOUR and TYPE: grafite quente, dourado Foxbit como acento, verde/vermelho só para resultado; Chakra Petch + IBM Plex Sans
+   LAYOUT: KPIs do dia, sala + gráfico à esquerda, mercado selecionado, checklist e log real à direita; empilha abaixo de 1000px */
+:root{color-scheme:dark;--bg:#0e1213;--panel:#151c1e;--panel2:#1a2326;--line:#263236;--ink:#e8f0f1;--mute:#8ea2a7;--teal:#2bb5a8;--ok:#3ecf8e;--warn:#f2b33d;--crit:#ef5350;--gold:#e9b949}
 :root[data-theme=light],:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;min-width:0}
-body{margin:0;background:radial-gradient(1200px 500px at 30% -10%,#173033 0,transparent 60%),var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif;overflow-x:clip;min-height:100vh}
+body{margin:0;background:radial-gradient(1100px 480px at 25% -10%,#2a2516 0,transparent 60%),var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif;overflow-x:clip;min-height:100vh}
 h1,h2,h3,.num{font-family:"Chakra Petch",sans-serif;letter-spacing:.01em}
 header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;padding:22px max(3vw,16px) 8px}
 h1{margin:0;font-size:clamp(26px,3.2vw,38px);line-height:1.05}
 .live{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--mute);margin-top:8px}
-.live i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 #3ecf8e88;animation:live 2s infinite}
-@keyframes live{70%{box-shadow:0 0 0 8px #3ecf8e00}}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--mute)}.live i.on{background:var(--ok);animation:live 2s infinite}.live i.warn{background:var(--warn)}
+@keyframes live{0%{box-shadow:0 0 0 0 #3ecf8e88}70%{box-shadow:0 0 0 8px #3ecf8e00}}
 .ctr{display:flex;gap:8px;flex-wrap:wrap}
-button{font:600 14px "IBM Plex Sans";min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;transition:border-color .2s,background .2s}
-button:hover:not(:disabled){border-color:var(--teal)}button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
-button:disabled{opacity:.45;cursor:default}
-button.pri{background:linear-gradient(180deg,#36c7b9,#239e92);border-color:#2bb5a8;color:#04201c}
+button{font:600 14px "IBM Plex Sans";min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;transition:border-color .2s}
+button:hover:not(:disabled){border-color:var(--gold)}button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}button:disabled{opacity:.45;cursor:default}
+button.pri{background:linear-gradient(180deg,#f0c75e,#d9a93a);border-color:#e9b949;color:#1d1503}
+button.danger{border-color:#ef535066;color:#ffb3b1}
 .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;padding:12px max(3vw,16px)}
 .k{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:12px 16px}
-.k b{display:block;font:700 clamp(21px,2.3vw,29px)/1.15 "Chakra Petch";white-space:nowrap}
-.k span{font-size:13px;color:var(--mute)}
-.k.ok b{color:var(--ok)}.k.warn b{color:var(--warn)}.k.crit b{color:var(--crit)}.k.gold b{color:var(--gold)}
-main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:14px;padding:4px max(3vw,16px) 24px;align-items:start}
+.k b{display:block;font:700 clamp(20px,2.2vw,28px)/1.15 "Chakra Petch";white-space:nowrap}
+.k span{font-size:13px;color:var(--mute)}.k small{display:block;font-size:12px;color:var(--mute)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;padding:4px max(3vw,16px) 28px;align-items:start}
 .col{display:flex;flex-direction:column;gap:14px}
-.scene{background:radial-gradient(ellipse at 45% 45%,#1c2a2d,#0b1011 78%);border:1px solid var(--line);border-radius:18px;position:relative;overflow:hidden}
+.scene{background:radial-gradient(ellipse at 45% 45%,#262219,#0c0f10 78%);border:1px solid var(--line);border-radius:18px;position:relative;overflow:hidden}
 .scene svg{display:block;width:100%;height:auto}
 .note{position:absolute;left:16px;bottom:12px;font-size:13px;color:var(--mute)}
 .card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:16px;padding:18px}
-.card h2{margin:0;font-size:22px;line-height:1.1}
-.card h3{margin:0 0 4px;font-size:17px}
+.card h2{margin:0;font-size:22px;line-height:1.1}.card h3{margin:0 0 4px;font-size:17px}
 .sub{color:var(--mute);font-size:13px}
-.chip{display:inline-flex;align-items:center;gap:6px;font:600 13px "IBM Plex Sans";padding:3px 11px;border-radius:99px;margin:10px 0 6px;color:#081012}
-.chip.ok{background:var(--ok)}.chip.warn{background:var(--warn)}.chip.crit{background:var(--crit)}.chip.gold{background:var(--gold)}
-.m{display:grid;grid-template-columns:6.5em minmax(0,1fr) 4.8em;gap:10px;align-items:center;font-size:13px;margin:8px 0}
-.bar{height:7px;background:#0b1112;border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;border-radius:9px;transition:width .6s}
-.m em{font-style:normal;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.diag{background:#0f1819;border:1px solid #1f3a3a;padding:11px 13px;border-radius:12px;font-size:14px;margin:14px 0}
-.diag b{color:var(--teal)}
+.chip{display:inline-flex;font:600 13px "IBM Plex Sans";padding:3px 11px;border-radius:99px;margin:10px 0 6px;color:#081012}
+.chip.ok{background:var(--ok)}.chip.warn{background:var(--warn)}.chip.crit{background:var(--crit)}.chip.gold{background:var(--gold)}.chip.teal{background:var(--teal)}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px}
+.kv div{background:#0f1516;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.kv span{display:block;font-size:12px;color:var(--mute)}.kv b{font:600 16px "Chakra Petch";white-space:nowrap}
+.diag{background:#14130e;border:1px solid #3a3320;padding:11px 13px;border-radius:12px;font-size:14px;margin:14px 0}.diag b{color:var(--gold)}
 .acts{display:flex;gap:8px;flex-wrap:wrap}.acts button{flex:1 1 140px}
+.up{color:var(--ok)}.down{color:var(--crit)}
 ul{list-style:none;margin:8px 0 0;padding:0}
-.feed li{display:grid;grid-template-columns:3.4em minmax(0,1fr);gap:8px;font-size:13px;padding:7px 0;border-top:1px solid var(--line)}
+.check li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.check li i{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font:700 12px "IBM Plex Sans";font-style:normal;color:#081012;margin-top:1px}
+.check .y i{background:var(--ok)}.check .n i{background:var(--crit)}.check .w i{background:var(--warn)}
+.check small{display:block;color:var(--mute);font-size:13px}
+.feed li{display:grid;grid-template-columns:6.8em minmax(0,1fr);gap:8px;font-size:13px;padding:7px 0;border-top:1px solid var(--line)}
 .feed time{color:var(--mute);white-space:nowrap;font-variant-numeric:tabular-nums}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:1px}
-.alerts li{font-size:13px;padding:3px 0;color:var(--mute)}
-.ticket{font-size:13px;color:var(--teal);margin-top:10px}
-.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px}
-.kv div{background:#0f1617;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
-.kv span{display:block;font-size:12px;color:var(--mute)}.kv b{font:600 16px "Chakra Petch";white-space:nowrap}
-.up{color:var(--ok)}.down{color:var(--crit)}
 .chead{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:flex-end;justify-content:space-between}
 .price{font:700 clamp(24px,3vw,32px)/1 "Chakra Petch";white-space:nowrap}
+.tabs{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap}.tab{min-height:36px;padding:0 14px;border-radius:99px;font-size:13px}.tab.on{background:#e9b94922;border-color:var(--gold);color:var(--gold)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mute)}
 .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:3px}
-.fig{position:relative;height:300px;margin:12px 0 4px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.fig{position:relative;height:320px;margin:12px 0 4px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
 .stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:10px}
-.stats div{background:#0f1617;border:1px solid var(--line);border-radius:12px;padding:9px 12px}
-.stats span{display:block;font-size:12px;color:var(--mute)}.stats b{font:600 18px "Chakra Petch";white-space:nowrap}
+.stats div{background:#0f1516;border:1px solid var(--line);border-radius:12px;padding:9px 12px}
+.stats span{display:block;font-size:12px;color:var(--mute)}.stats b{font:600 17px "Chakra Petch";white-space:nowrap}
 table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px;font-variant-numeric:tabular-nums}
 th{text-align:left;font-weight:500;color:var(--mute);font-size:13px;padding:6px 8px;border-bottom:1px solid var(--line)}
 td{padding:7px 8px;border-bottom:1px solid #1d282b}td.r,th.r{text-align:right;white-space:nowrap}
 .tag{font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px}.tag.c{background:#3ecf8e22;color:var(--ok)}.tag.v{background:#ef535022;color:var(--crit)}
-.toast{position:fixed;right:16px;bottom:16px;max-width:350px;background:#1b2729;border:1px solid var(--line);border-radius:14px;padding:12px 14px 12px 16px;font-size:14px;box-shadow:0 14px 40px #000a;transform:translateY(150%);transition:transform .35s;z-index:9}
-.toast.on{transform:none}.toast b{display:block;font-size:12px;color:#a9abe6;margin-bottom:2px}.toast.fx b{color:var(--gold)}
-.bot{cursor:pointer;transition:transform 2.4s cubic-bezier(.45,.05,.4,1);outline:none}
-.bot{--st:var(--ok)}.bot.warn{--st:var(--warn)}.bot.crit{--st:var(--crit)}
-.bot .ring{opacity:0;transition:opacity .2s}.bot.sel .ring,.bot:focus-visible .ring{opacity:1}
-.bot .b{animation:bob 2.6s ease-in-out infinite}
-.bot.crit .lamp{animation:pulse .9s infinite}.bot.crit .b{animation:shake .5s infinite}
-@keyframes bob{50%{transform:translateY(-3px)}}
-@keyframes shake{25%{transform:translateX(-1px)}75%{transform:translateX(1px)}}
-@keyframes pulse{50%{opacity:.2}}
-details{margin:0 max(3vw,16px) 32px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 18px}
-summary{cursor:pointer;font-weight:600;min-height:28px}
-details p,details li{max-width:70ch;color:#c9d6d9}
-details ol{padding-left:20px}details ol li{list-style:decimal;padding:3px 0}
-pre{background:#0b1112;border-radius:10px;padding:12px;font-size:13px;overflow-x:auto}
-.tabs{display:flex;gap:6px;margin-top:14px}.tab{min-height:36px;padding:0 14px;border-radius:99px;font-size:13px}.tab.on{background:#e9b94922;border-color:var(--gold);color:var(--gold)}
-details.inner{margin:14px 0 0;background:#0f1617;padding:10px 14px}details.inner p{font-size:14px}
-textarea{width:100%;margin-top:4px;background:#0b1112;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:13px/1.4 ui-monospace,monospace;resize:vertical}textarea:focus{outline:2px solid var(--teal)}
-.login{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;z-index:20;padding:16px}.login[hidden]{display:none}
+.toast{position:fixed;right:16px;bottom:16px;max-width:350px;background:#1d1a12;border:1px solid #3a3320;border-radius:14px;padding:12px 16px;font-size:14px;box-shadow:0 14px 40px #000a;transform:translateY(150%);transition:transform .35s;z-index:9}
+.toast.on{transform:none}.toast b{display:block;font-size:12px;color:var(--gold);margin-bottom:2px}
+.login{position:fixed;inset:0;background:#000c;display:flex;align-items:center;justify-content:center;z-index:20;padding:16px}.login[hidden]{display:none}
 .login form{width:min(380px,100%);display:grid;gap:8px}.login p{margin:4px 0 8px}
-input{font:16px "IBM Plex Sans";min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:#0b1112;color:var(--ink)}input:focus{outline:2px solid var(--teal)}
-@media(prefers-reduced-motion:reduce){.bot,.bot .b,.bot .lamp,.live i{transition:none;animation:none!important}}
+input{font:16px "IBM Plex Sans";min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:#0b1011;color:var(--ink)}input:focus{outline:2px solid var(--gold)}
+.bot{cursor:pointer;outline:none}
+.bot{--st:var(--teal)}.bot.pos{--st:var(--ok)}.bot.warn{--st:var(--warn)}.bot.err{--st:var(--crit)}
+.bot .ring{opacity:0;transition:opacity .2s}.bot.sel .ring,.bot:focus-visible .ring{opacity:1}
+.bot .b{animation:bob 2.6s ease-in-out infinite}.bot.warn .b{animation:none}
+.bot.pos .lamp{animation:pulse 1.6s infinite}
+@keyframes bob{50%{transform:translateY(-3px)}}@keyframes pulse{50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.bot .b,.bot .lamp,.live i{animation:none!important}}
 @media(max-width:1000px){main{grid-template-columns:minmax(0,1fr)}.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:8px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;color:var(--mute)}.stack td:empty{display:none}.note{position:static;padding:0 14px 12px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.hide-s{display:none}.fig{height:240px}}
+@media(max-width:600px){.note{position:static;padding:0 14px 12px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fig{height:250px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:8px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;color:var(--mute)}.stack td:empty{display:none}}
 </style>
 </head>
 <body>
 <header>
-  <div><h1>Sala de Monitoramento</h1><div class="live"><i></i><span>Ao vivo · <span id="clock"></span> · cada robô é um serviço do Zabbix</span></div></div>
-  <div class="ctr">
-    <button class="pri" id="bInc">Simular incidente</button>
-    <button id="bPause">Pausar</button>
-  </div>
+  <div><h1>Escritório Foxbit</h1><div class="live"><i id="liveDot"></i><span id="liveTxt">Conectando ao robô…</span></div></div>
+  <div class="ctr"><button id="bRefresh">Atualizar agora</button><button id="bOut">Sair</button></div>
 </header>
 <section class="kpis" id="kpis"></section>
 <main>
   <div class="col">
     <div class="scene">
-      <svg id="svg" viewBox="-375 -150 960 690" role="img" aria-label="Planta isométrica da sala de monitoramento">
+      <svg id="svg" viewBox="-270 -135 640 490" role="img" aria-label="Escritório isométrico com um robô operador por mercado">
         <defs id="defs">
           <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-          <filter id="soft"><feGaussianBlur stdDeviation="14"/></filter>
-          <radialGradient id="pool"><stop offset="0" stop-color="#2bb5a8" stop-opacity=".22"/><stop offset="1" stop-color="#2bb5a8" stop-opacity="0"/></radialGradient>
-          <radialGradient id="poolG"><stop offset="0" stop-color="#e9b949" stop-opacity=".22"/><stop offset="1" stop-color="#e9b949" stop-opacity="0"/></radialGradient>
-          <radialGradient id="poolR"><stop offset="0" stop-color="#ef5350" stop-opacity=".2"/><stop offset="1" stop-color="#ef5350" stop-opacity="0"/></radialGradient>
-          <linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0c1a2a"/><stop offset="1" stop-color="#1f3340"/></linearGradient>
-          <linearGradient id="scr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a1517"/><stop offset="1" stop-color="#0f2224"/></linearGradient>
+          <radialGradient id="poolG"><stop offset="0" stop-color="#e9b949" stop-opacity=".2"/><stop offset="1" stop-color="#e9b949" stop-opacity="0"/></radialGradient>
+          <radialGradient id="poolV"><stop offset="0" stop-color="#3ecf8e" stop-opacity=".28"/><stop offset="1" stop-color="#3ecf8e" stop-opacity="0"/></radialGradient>
+          <linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0c1a2a"/><stop offset="1" stop-color="#2a3340"/></linearGradient>
+          <linearGradient id="scr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a1213"/><stop offset="1" stop-color="#12201f"/></linearGradient>
         </defs>
-        <g id="static"></g><g id="dyn"></g><g id="bots"></g>
+        <g id="static"></g><g id="bots"></g>
       </svg>
-      <div class="note">Serviços NOC simulados até ligar no Zabbix · robô Foxbit com dados reais</div>
+      <div class="note">Dados reais do Supabase do robô · clique num robô para ver o mercado</div>
     </div>
-
     <div class="card" id="fxCard">
       <div class="chead">
-        <div><h3>Robô Foxbit</h3><div class="sub" id="fxSub"></div></div>
-        <div style="text-align:right"><div class="price num" id="fxPrice"></div><div class="sub" id="fxChg"></div></div>
+        <div><h3 id="fxTitle">Gráfico</h3><div class="sub" id="fxSub"></div></div>
+        <div style="text-align:right"><div class="price num" id="fxPrice">–</div><div class="sub" id="fxChg"></div></div>
       </div>
       <div class="tabs" role="tablist" id="tabs"></div>
       <div class="fig"><svg id="chart"></svg></div>
-      <div class="legend"><span><i style="background:#dff5f2"></i>Preço</span><span><i style="background:#e9b949"></i>Média 50 dias</span><span><i style="background:#e9b94955;height:10px"></i>Margem ±2%</span><span><i style="background:#3ecf8e33;height:10px"></i>Comprado</span><span><i style="background:#3ecf8e;height:8px;width:8px;border-radius:2px"></i>Compra</span><span><i style="background:#ef5350;height:8px;width:8px;border-radius:2px"></i>Venda</span></div>
+      <div class="legend"><span><i style="background:#dff5f2"></i>Preço (fechamento diário)</span><span><i style="background:#e9b949"></i><span id="lgMM">Média</span></span><span><i style="background:#e9b94955;height:10px"></i>Faixa de compra/venda</span><span><i style="background:#3ecf8e33;height:10px"></i>Comprado</span><span><i style="background:#3ecf8e;height:8px;width:8px;border-radius:2px"></i>Compra</span><span><i style="background:#ef5350;height:8px;width:8px;border-radius:2px"></i>Venda</span></div>
       <div class="stats" id="fxStats"></div>
       <table class="stack"><thead><tr><th>Data</th><th>Ordem</th><th class="r">Preço</th><th class="r">Valor</th><th class="r">Resultado</th><th>Motivo</th></tr></thead><tbody id="fxTrades"></tbody></table>
-      <div class="sub" style="margin-top:10px" id="fxNote"></div>
     </div>
   </div>
   <aside class="col">
     <div class="card" id="panel"></div>
-    <div class="card"><h3>Eventos</h3><ul class="feed" id="feed"></ul></div>
+    <div class="card"><h3>Pronto para operar?</h3><div class="sub">Conferido com os dados que o robô gravou</div><ul class="check" id="check"></ul></div>
+    <div class="card"><h3>Log do robô</h3><div class="sub">Últimas mensagens gravadas na tabela robo_log</div><ul class="feed" id="feed"></ul></div>
   </aside>
 </main>
-<details>
-  <summary>Como ligar no Zabbix e no robô de verdade</summary>
-  <ol>
-    <li>Criar um usuário de API no Zabbix só com leitura e gerar um token.</li>
-    <li>Um backend pequeno (Python/FastAPI) consulta a API a cada 30 s com <code>host.get</code> e <code>problem.get</code> e devolve um JSON simples para a sala.</li>
-    <li>Severidade do Zabbix vira o estado do robô: Warning/Average = âmbar, High/Disaster = vermelho e vai para a sala de incidente.</li>
-    <li>Quando um robô fica vermelho, o backend manda o card para o Teams (webhook) e a IA escreve o diagnóstico com base no histórico do item.</li>
-    <li>O robô Foxbit já grava status, gráfico e ordens no Supabase (tabelas <code>robo_kv</code> e <code>robo_trades</code>). O backend lê essas tabelas com login e manda para a sala, sem colar nada à mão.</li>
-  </ol>
-  <button id="bCopy">Copiar exemplo de consulta</button>
-<pre id="code">POST /api_jsonrpc.php
-{"jsonrpc":"2.0","method":"problem.get","id":1,
- "params":{"output":"extend","recent":true,
-           "selectTags":"extend","sortfield":["eventid"],"sortorder":"DESC"},
- "auth":"SEU_TOKEN"}</pre>
-</details>
 <div class="login" id="login" hidden><form id="fLogin" class="card"><h2>Entrar</h2><p class="sub">Mesmo e-mail e senha do painel do robô. A sessão fica salva neste navegador.</p>
 <label class="sub" for="email">E-mail</label><input id="email" type="email" autocomplete="username" required>
 <label class="sub" for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password" required>
-<button class="pri" type="submit">Entrar</button><div id="eLogin" class="sub" style="color:var(--crit)"></div>
-<button type="button" id="bSkip">Ver só a sala NOC</button></form></div>
-<div class="toast" id="toast"><b id="toastHd"></b><span id="toastTxt"></span></div>
+<button class="pri" type="submit">Entrar</button><div id="eLogin" class="sub" style="color:var(--crit)"></div></form></div>
+<div class="toast" id="toast"><b id="toastHd">Robô Foxbit</b><span id="toastTxt"></span></div>
 <script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
 <script>
 {
-const S=40,C=S*.866,H=S*.5,NS='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg';
+const S=40,C=S*.866,H=S*.5;
 const P=(x,y,z=0)=>[(x-y)*C,(x+y)*H-z*S];
 const pts=a=>a.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
 const quad=(a,fill,extra='')=>`<polygon points="${pts(a)}" fill="${fill}" ${extra}/>`;
 const box=(x,y,w,d,h,c,z=0)=>quad([P(x,y,z+h),P(x+w,y,z+h),P(x+w,y+d,z+h),P(x,y+d,z+h)],c[0])+quad([P(x,y+d,z),P(x+w,y+d,z),P(x+w,y+d,z+h),P(x,y+d,z+h)],c[1])+quad([P(x+w,y,z),P(x+w,y+d,z),P(x+w,y+d,z+h),P(x+w,y,z+h)],c[2]);
-const glass=(x1,y1,x2,y2,h=1.5)=>quad([P(x1,y1),P(x2,y2),P(x2,y2,h),P(x1,y1,h)],'rgba(170,230,235,.06)','stroke="rgba(170,230,235,.3)" stroke-width="1"')+`<polyline points="${pts([P(x1,y1,h),P(x2,y2,h)])}" stroke="rgba(200,245,245,.55)" stroke-width="1.5" fill="none"/>`;
-const label=(x,y,t,c='#5f777c')=>{const [a,b]=P(x,y);return `<text x="${a.toFixed(0)}" y="${b.toFixed(0)}" fill="${c}" font-size="13" font-weight="600" text-anchor="middle" letter-spacing=".04em">${t}</text>`};
 const onY0=(x,z)=>{const [a,b]=P(x,0,z);return `matrix(${C},${H},0,${S},${a.toFixed(1)},${b.toFixed(1)})`};
 const onX0=(y,z)=>{const [a,b]=P(0,y,z);return `matrix(${-C},${H},0,${S},${a.toFixed(1)},${b.toFixed(1)})`};
 const shade=(h,k)=>'#'+[1,3,5].map(i=>Math.max(0,Math.min(255,Math.round(parseInt(h.substr(i,2),16)*k))).toString(16).padStart(2,'0')).join('');
-const $=id=>document.getElementById(id);
-const rnd=(a,b)=>a+Math.random()*(b-a);
-const brl=(v,d=2)=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:d,maximumFractionDigits:d});
-const hhmm=d=>d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-
-/* ---------- serviços ---------- */
-const SV=[
- {id:'sap',name:'SAP',host:'sap-pi-01',type:'Integração',body:'#cfd8dc',w:'Fila de IDocs acima de 500',c:'Integração SAP sem resposta (timeout RFC)',dw:'Fila crescendo mais rápido que o consumo. Provável lentidão no job de processamento. Verificar SM58 e jobs em background.',dc:'O PI parou de receber resposta do ECC há mais de 5 min. Mesmo padrão do último incidente: serviço RFC travado. Reiniciar o canal de comunicação e avisar o time SAP.'},
- {id:'ura',name:'URA',host:'ura-sip-01',type:'Telefonia',body:'#e8b896',w:'Canais ocupados em 85%',c:'URA não atende: tronco SIP caído',dw:'Volume de chamadas acima da média do horário. Pode ser reflexo de falha em campo. Cruzar com o mapa de rede.',dc:'O registro SIP com a operadora caiu e os clientes recebem ocupado. Checar o link da operadora e o SBC, e abrir chamado com a operadora.'},
- {id:'bot',name:'Chatbot',host:'chatbot-api',type:'Atendimento',body:'#9fc4ea',w:'Tempo de resposta acima de 3 s',c:'API do chatbot retornando 503',dw:'Latência subindo junto com a memória. Possível vazamento no container. Acompanhar por 10 min.',dc:'Os pods reiniciam em loop e o health check falha. O último deploy foi há 40 min: o mais provável é rollback.'},
- {id:'core',name:'Core Rede',host:'core-rj-01',type:'Rede',body:'#d4bfe8',w:'CPU alta no roteador core',c:'Interface de uplink fora',dw:'CPU em 80% com tráfego normal. Pode ser tempestade de broadcast ou ataque. Ver os top talkers.',dc:'O uplink principal caiu e o tráfego foi para o backup, que está saturado. Acionar o time de campo para a fibra.'},
- {id:'bgp',name:'BGP',host:'borda-bgp-02',type:'Rede',body:'#a9dcc0',w:'Sessão BGP oscilando',c:'Sessão BGP com operadora caída',dw:'Três quedas e voltas da sessão em 15 min. Normalmente é instabilidade física. Ver os erros da interface.',dc:'A sessão está fora e as rotas foram retiradas. Escalar para a operadora com o horário exato.'},
- {id:'dc',name:'Servidores',host:'sensor-dc-01',type:'Ambiente',body:'#e8d690',w:'Temperatura em 29 °C',c:'Temperatura em 35 °C: risco ao hardware',dw:'A temperatura subiu 3 °C em 20 min. Verificar o ar-condicionado 2.',dc:'Os dois ar-condicionados estão sem retorno no sensor. Acionar a manutenção e preparar o desligamento dos servidores não críticos.'},
- {id:'fw',name:'Firewall',host:'fw-ha-01',type:'Segurança',body:'#b9c2ee',w:'Sessões acima de 80%',c:'Failover do cluster de firewall',dw:'Pico de sessões novas vindas de poucos IPs. Pode ser varredura. Conferir os logs e bloquear se confirmar.',dc:'O nó primário parou e o secundário assumiu. Confirmar se as VPNs subiram e analisar o nó que caiu.'},
- {id:'dns',name:'DNS',host:'dns-rec-01',type:'Rede',body:'#efb9c9',w:'Resolução lenta',c:'DNS recursivo sem responder',dw:'O cache caiu e as consultas externas estão demorando. Ver se algum encaminhador está fora.',dc:'O serviço parou. Clientes ficam "sem internet" com o link ok. Reiniciar e tirar o servidor do balanceamento.'},
- {id:'rad',name:'RADIUS',host:'radius-01',type:'Autenticação',body:'#9ed8d6',w:'Autenticações lentas',c:'RADIUS recusando PPPoE em massa',dw:'O tempo de autenticação dobrou. O banco pode estar lento. Ver as conexões abertas.',dc:'O banco não responde e as conexões PPPoE estão sendo recusadas. Acionar o DBA e liberar o servidor reserva.'},
- {id:'glpi',name:'GLPI',host:'glpi-web',type:'Sistemas',body:'#d9d2c4',w:'Disco em 85%',c:'GLPI fora do ar (HTTP 502)',dw:'Os anexos ocupam a maior parte do disco. Agendar limpeza ou aumentar o volume.',dc:'O PHP-FPM parou e os chamados não abrem. Reiniciar o serviço e checar o espaço em disco.'}
-];
-SV.forEach((s,i)=>{const r=i<5?0:1,c=i%5;s.desk=[.9+c*3,r?7.9:5.3];s.home=[s.desk[0]+.65,s.desk[1]+1.2];s.x=s.home[0];s.y=s.home[1];s.status='ok';s.alerts=[];s.ticket='';s.ack=false;s.seat=-1;s.ticks=0});
-const FX={id:'fox',name:'Robô Foxbit',host:'robo-cripto (Python)',type:'Trading BTC/BRL',body:'#e9b949',crypto:true,home:[2.35,3.45],status:'ok',alerts:[]};
-FX.x=FX.home[0];FX.y=FX.home[1];
-const ALL=[...SV,FX];
-const SEATS=[[12.5,2.5],[13.6,2.5],[14.7,2.5],[12.5,3.6],[13.6,3.6],[14.7,3.6]];
-
-/* ---------- sala estática ---------- */
-let st='';
-st+=quad([P(0,0),P(16,0),P(16,10),P(0,10)],'#222c2f');
-for(let i=0;i<16;i++)for(let j=0;j<10;j++)if((i+j)%2)st+=quad([P(i,j),P(i+1,j),P(i+1,j+1),P(i,j+1)],'#252f32');
-st+=quad([P(0,0),P(4.5,0),P(4.5,4.5),P(0,4.5)],'#2a2620');
-for(let i=0;i<9;i++)st+=`<polyline points="${pts([P(i*.5,0),P(i*.5,4.5)])}" stroke="#332e26" fill="none"/>`;
-st+=quad([P(11.5,0),P(16,0),P(16,4.5),P(11.5,4.5)],'#1e2a30');
-st+=quad([P(5.6,1.2),P(10.4,1.2),P(10.4,3.8),P(5.6,3.8)],'#27383a');
-st+=quad([P(5.8,1.4),P(10.2,1.4),P(10.2,3.6),P(5.8,3.6)],'none','stroke="#35494b" stroke-width="1.5"');
-const [p1x,p1y]=P(8,6.4),[p2x,p2y]=P(8,9),[p3x,p3y]=P(2.2,2.6),[p4x,p4y]=P(13.7,2.6);
-st+=`<ellipse cx="${p1x}" cy="${p1y}" rx="300" ry="120" fill="url(#pool)"/><ellipse cx="${p2x}" cy="${p2y}" rx="300" ry="120" fill="url(#pool)"/><ellipse cx="${p3x}" cy="${p3y}" rx="130" ry="65" fill="url(#poolG)"/><ellipse id="incPool" cx="${p4x}" cy="${p4y}" rx="130" ry="65" fill="url(#poolR)" opacity="0"/>`;
-// paredes
-st+=quad([P(0,0,0),P(16,0,0),P(16,0,2.5),P(0,0,2.5)],'#182124');
-st+=quad([P(0,0,0),P(0,10,0),P(0,10,2.5),P(0,0,2.5)],'#141c1e');
-st+=quad([P(0,0,2.5),P(16,0,2.5),P(16,-.18,2.5),P(0,-.18,2.5)],'#33434a')+quad([P(0,0,2.5),P(0,10,2.5),P(-.18,10,2.5),P(-.18,0,2.5)],'#2b393f');
-st+=quad([P(0,0,0),P(16,0,0),P(16,0,.12),P(0,0,.12)],'#0e1517')+quad([P(0,0,0),P(0,10,0),P(0,10,.12),P(0,0,.12)],'#0b1112');
-// janelas com cidade na parede esquerda
-{let w=`<g transform="${onX0(5.2,2.15)}"><rect x="0" y="0" width="4.4" height="1.55" fill="url(#night)"/>`;
- let bx=.05;const bs=[[.35,.9],[.25,.55],[.4,1.1],[.3,.7],[.45,.95],[.3,.5],[.35,1.2],[.4,.8],[.3,.6],[.35,1]];
- for(const [bw,bh] of bs){if(bx+bw>4.4)break;w+=`<rect x="${bx}" y="${1.55-bh}" width="${bw}" height="${bh}" fill="#16242e"/>`;for(let k=0;k<5;k++)if(Math.random()<.55)w+=`<rect x="${(bx+.06+Math.random()*(bw-.14)).toFixed(2)}" y="${(1.55-bh+.1+Math.random()*(bh-.2)).toFixed(2)}" width=".05" height=".05" fill="#f5d77a" opacity=".8"/>`;bx+=bw+.04}
- w+=`<rect x="0" y="0" width="4.4" height="1.55" fill="none" stroke="#33434a" stroke-width=".06"/><line x1="2.2" y1="0" x2="2.2" y2="1.55" stroke="#33434a" stroke-width=".05"/></g>`;st+=w}
-// telão NOC
-st+=`<g transform="${onY0(5.4,2.15)}"><rect x="0" y="0" width="5.2" height="1.65" rx=".05" fill="url(#scr)" stroke="#2bb5a8" stroke-opacity=".55" stroke-width=".04"/>
-<text x=".25" y=".38" font-size=".22" fill="#8ea2a7" font-family="IBM Plex Sans">Disponibilidade 24 h</text><text id="wallA" x=".25" y=".95" font-size=".55" font-weight="700" fill="#3ecf8e" font-family="Chakra Petch"></text>
-<g id="wallDots"></g></g>`;
-// telão incidente
-st+=`<g transform="${onY0(12.1,2.05)}"><rect x="0" y="0" width="3.3" height="1.35" rx=".05" fill="url(#scr)" id="incScr" stroke="#ef5350" stroke-opacity=".5" stroke-width=".04"/><text x=".2" y=".38" font-size=".2" fill="#8ea2a7" font-family="IBM Plex Sans">Sala de incidente</text><text id="wallB" x=".2" y=".9" font-size=".38" font-weight="700" fill="#ef5350" font-family="Chakra Petch"></text></g>`;
-// telão cripto
-st+=`<g transform="${onY0(.45,2.15)}"><rect x="0" y="0" width="3.6" height="1.6" rx=".05" fill="url(#scr)" stroke="#e9b949" stroke-opacity=".6" stroke-width=".04"/><text x=".18" y=".33" font-size=".2" fill="#e9b949" font-family="Chakra Petch" font-weight="600">BTC/BRL · Foxbit</text><text id="wallP" x="3.42" y=".33" font-size=".2" fill="#e8f0f1" text-anchor="end" font-family="Chakra Petch"></text>
-<polyline id="wallMM" fill="none" stroke="#e9b949" stroke-width="1.5" vector-effect="non-scaling-stroke"/><polyline id="wallL" fill="none" stroke="#dff5f2" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/><g id="wallM"></g></g>`;
-// mesas
-const deskC=['#6a5444','#4b3c31','#5a4739'],monC=['#20272a','#101517','#191f21'];
-const desk=(x,y,n,id)=>{let o=box(x,y,1.3+(n>2?.5:0),.6,.42,deskC);const w=n>2?.5:.5;for(let k=0;k<n;k++){const mx=x+.12+k*.58;o+=box(mx,y+.08,w,.06,.38,monC,.42)+quad([P(mx+.03,y+.14,.47),P(mx+w-.03,y+.14,.47),P(mx+w-.03,y+.14,.77),P(mx+.03,y+.14,.77)],id?'#2bb5a8':'#e9b949',`${id?`class="scr-${id}"`:''} opacity=".85"`)}return o};
-SV.forEach(s=>{const [x,y]=s.desk;st+=desk(x,y,2,s.id)+box(s.home[0]-.3,s.home[1]-.05,.6,.5,.22,['#2e3a3f','#1f282b','#263135'])});
-st+=desk(1.35,2.3,3,'')+box(FX.home[0]-.3,FX.home[1]-.05,.6,.5,.22,['#3a3020','#2a2318','#31291c']);
-// divisórias
-st+=glass(4.5,0,4.5,4.5)+glass(0,4.5,2.6,4.5)+glass(3.6,4.5,4.5,4.5)+glass(11.5,0,11.5,4.5)+glass(11.5,4.5,12.2,4.5)+glass(13.3,4.5,16,4.5);
-// lounge
-st+=box(6.4,2,.35,1.6,.3,['#3f6f6a','#2c514d','#356059'])+box(6.4,2,.15,1.6,.65,['#3f6f6a','#2c514d','#356059'])+box(7.6,2.4,.9,.8,.25,['#5a4739','#3f342b','#4a3d32'])+box(9.4,1.6,.5,.4,.55,['#9aa4a7','#6b7477','#7f888b'])+box(9.48,1.65,.15,.12,.1,['#3ecf8e','#2a9a68','#33b27a'],.55);
-const plant=(x,y,s=1)=>{const [a,b]=P(x,y);return box(x-.18,y-.18,.36,.36,.28,['#8a6a4f','#6b513c','#7a5d45'])+`<ellipse cx="${a}" cy="${b-16*s}" rx="${14*s}" ry="${17*s}" fill="#2f7a4c"/><ellipse cx="${a-5*s}" cy="${b-23*s}" rx="${8*s}" ry="${9*s}" fill="#4ea06b"/><ellipse cx="${a+6*s}" cy="${b-14*s}" rx="${6*s}" ry="${7*s}" fill="#3d8c5a"/>`};
-st+=plant(.45,.45)+plant(4.05,.45,.8)+plant(10.9,.5)+plant(15.5,.5,.8)+plant(.45,9.5)+plant(15.5,9.5);
-st+=label(8,9.75,'OPERAÇÕES');
-$('static').innerHTML=st;
-
-/* ---------- robôs ---------- */
-const defs=$('defs'),botsG=$('bots');
-ALL.forEach(s=>{
- const lg=document.createElementNS(NS,'linearGradient');lg.id='g-'+s.id;lg.setAttribute('x1','0');lg.setAttribute('x2','1');lg.setAttribute('y1','0');lg.setAttribute('y2','1');
- lg.innerHTML=`<stop offset="0" stop-color="${shade(s.body,1.12)}"/><stop offset=".55" stop-color="${s.body}"/><stop offset="1" stop-color="${shade(s.body,.62)}"/>`;defs.appendChild(lg);
- const g=document.createElementNS(NS,'g');g.setAttribute('class','bot');g.dataset.id=s.id;g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label',s.name);
- const f=`url(#g-${s.id})`,dk=shade(s.body,.5),tw=s.name.length*7+24;
- g.innerHTML=`<ellipse cx="0" cy="0" rx="15" ry="6" fill="rgba(0,0,0,.45)"/><ellipse class="ring" cx="0" cy="0" rx="22" ry="9" fill="none" stroke="#2bb5a8" stroke-width="2"/>
- <ellipse cx="0" cy="-1" rx="9" ry="3.5" style="fill:var(--st)" opacity=".35" filter="url(#glow)"/>
- <g class="b">
-  <rect x="-7" y="-14" width="14" height="6" rx="3" fill="${dk}"/>
-  <rect x="-16" y="-31" width="5" height="13" rx="2.5" fill="${dk}" transform="rotate(10 -13 -31)"/><rect x="11" y="-31" width="5" height="13" rx="2.5" fill="${dk}" transform="rotate(-10 13 -31)"/>
-  <rect x="-11.5" y="-33" width="23" height="22" rx="8" fill="${f}"/><rect x="-9" y="-31" width="4" height="15" rx="2" fill="#fff" opacity=".22"/>
-  <rect x="-5" y="-27" width="10" height="7" rx="2.5" fill="#0a1011"/><rect x="-3" y="-24.6" width="6" height="2.2" rx="1.1" style="fill:var(--st)" filter="url(#glow)"/>
-  <rect x="-14" y="-57" width="28" height="23" rx="10" fill="${f}"/><rect x="-11" y="-55" width="8" height="5" rx="2.5" fill="#fff" opacity=".25"/>
-  <rect x="-11" y="-51" width="22" height="12" rx="6" fill="#0a1011"/>
-  <rect x="-7.5" y="-47.5" width="5" height="5" rx="2.5" style="fill:var(--st)" filter="url(#glow)"/><rect x="2.5" y="-47.5" width="5" height="5" rx="2.5" style="fill:var(--st)" filter="url(#glow)"/>
-  <rect x="-16.5" y="-50" width="3" height="8" rx="1.5" fill="${dk}"/><rect x="13.5" y="-50" width="3" height="8" rx="1.5" fill="${dk}"/>
-  <line x1="0" y1="-57" x2="0" y2="-64" stroke="#9aa5ad" stroke-width="2" stroke-linecap="round"/><circle class="lamp" cx="0" cy="-67" r="3.8" style="fill:var(--st)" filter="url(#glow)"/>
-  <g transform="translate(0,-86)"><rect x="${-tw/2}" y="-11" width="${tw}" height="21" rx="10.5" fill="rgba(9,14,15,.9)" style="stroke:var(--st)" stroke-opacity=".8"/><text x="0" y="4" fill="#e8f0f1" font-size="12" font-weight="600" text-anchor="middle">${s.name}</text></g>
- </g>`;
- s.el=g;botsG.appendChild(g)});
-
-/* ---------- estado NOC ---------- */
-const col={ok:'var(--ok)',warn:'var(--warn)',crit:'var(--crit)'};
-const txt={ok:'Normal',warn:'Atenção',crit:'Crítico'};
-const scr={ok:'#2bb5a8',warn:'#f2b33d',crit:'#ef5350'};
-let sel='fox',running=true,feed=[],avail=99.982;
-const now=()=>hhmm(new Date());
-function log(c,msg){feed.unshift({t:now(),c,msg});feed=feed.slice(0,9)}
-function toast(hd,m,fx){$('toastHd').textContent=hd;$('toastTxt').textContent=m;$('toast').className='toast on'+(fx?' fx':'');clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').classList.remove('on'),4500)}
-function metrics(s){const r={ok:[18,55,4,12,0,.2],warn:[68,86,30,90,.5,2],crit:[88,99,150,900,4,25]}[s.status];s.m={cpu:rnd(r[0],r[1]),mem:rnd(r[0]-5,r[1]),lat:rnd(r[2],r[3]),loss:rnd(r[4],r[5])}}
-function setStatus(s,v,quiet){
- if(s.status===v)return;const prev=s.status;s.status=v;s.ticks=0;metrics(s);
- if(v==='ok'){s.ack=false;s.ticket='';if(s.seat>=0){s.seat=-1;[s.x,s.y]=s.home}log('ok',`${s.name} normalizado`);if(prev==='crit')avail-=.002}
- if(v==='warn'){s.alerts.unshift({t:now(),m:s.w});log('warn',`${s.name}: ${s.w}`)}
- if(v==='crit'){s.alerts.unshift({t:now(),m:s.c});const used=SV.map(o=>o.seat);s.seat=SEATS.findIndex((_,i)=>!used.includes(i));if(s.seat<0)s.seat=0;[s.x,s.y]=SEATS[s.seat];log('crit',`${s.name}: ${s.c}`);if(!quiet)toast('Microsoft Teams · #noc-infra',`${s.name} (${s.host}): ${s.c}`)}
- s.alerts=s.alerts.slice(0,4)}
-SV.forEach(metrics);
-
-/* ---------- robô cripto: dados reais do Supabase (mesmo login do painel do robô) ---------- */
-const CFG=window.PAINEL||{},BASE=CFG.url,K=CFG.anonKey,FEE=.005;
-const MK={};let mk=null,fxOn=true,lastLoad=null,fxErr='',CTRL={pausado:false},conf=0,loaded=false,seen=null;
-const ddmm=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-const pct=v=>(v>=0?'+':'')+(v*100).toFixed(1).replace('.',',')+'%';
+const esc=x=>String(x??'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+const brl=(v,d=2)=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:d,maximumFractionDigits:d});
 const money=v=>Math.abs(v)<.005?brl(0):(v>0?'+':'−')+brl(Math.abs(v));
+const pct=v=>(v>=0?'+':'')+(v*100).toFixed(1).replace('.',',')+'%';
+const hhmm=d=>d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+const ddmm=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
 const dkey=s=>String(s||'').slice(0,10);
-const ago=d=>{if(!d)return 'sem data';const m=Math.round((Date.now()-d)/60000);return m<1?'agora':m<60?`há ${m} min`:m<1440?`há ${Math.round(m/60)} h`:`há ${Math.round(m/1440)} dias`};
+const ago=d=>{if(!d)return 'sem registro';const m=Math.round((Date.now()-d)/60000);return m<1?'agora':m<60?`há ${m} min`:m<1440?`há ${Math.round(m/60)} h`:`há ${Math.round(m/1440)} dias`};
+let tt;const toast=m=>{$('toastTxt').textContent=m;$('toast').classList.add('on');clearTimeout(tt);tt=setTimeout(()=>$('toast').classList.remove('on'),5000)};
+
+/* ---------- Supabase (mesmo login do painel) ---------- */
+const CFG=window.PAINEL||{},BASE=CFG.url,K=CFG.anonKey,FEE=.005,STALE=45*60000;
 const guarda={get(){try{return JSON.parse(localStorage.getItem('robo_sessao')||'null')}catch(e){return null}},set(v){try{localStorage.setItem('robo_sessao',JSON.stringify(v))}catch(e){}},limpar(){try{localStorage.removeItem('robo_sessao')}catch(e){}}};
 let SESSAO=guarda.get();
 async function auth(tipo,corpo){const r=await fetch(`${BASE}/auth/v1/token?grant_type=${tipo}`,{method:'POST',headers:{apikey:K,'Content-Type':'application/json'},body:JSON.stringify(corpo)});
@@ -303,21 +163,30 @@ async function token(){if(!SESSAO)throw new Error('login');if(Date.now()/1000>SE
 async function sb(caminho,op={}){const t=await token();const r=await fetch(`${BASE}/rest/v1/${caminho}`,{...op,headers:{apikey:K,Authorization:'Bearer '+t,'Content-Type':'application/json',...(op.headers||{})}});
  if(r.status===401){sair();throw new Error('login')}if(!r.ok)throw new Error('Supabase '+r.status);return r.status===204||op.method==='POST'?null:r.json()}
 function sair(){SESSAO=null;guarda.limpar();$('login').hidden=false}
+
+/* ---------- estado ---------- */
+const MK={};let ORDER=[],mk=null,CTRL={pausado:false},LOGS=[],loaded=false,lastLoad=null,err='',seen=null,conf=0,built='';
 const mmAt=(m,i)=>m.mm?(m.mm[i]??null):null;
+const stale=m=>!m.upd||(Date.now()-m.upd)>STALE;
+const totalRes=()=>ORDER.reduce((a,k)=>a+MK[k].realizado+MK[k].aberto,0);
+
 async function carregar(){
- if(!BASE||!K){fxErr='Faltou o config.js com a URL e a chave pública do Supabase.';renderFx();return}
+ if(!BASE||!K){err='Faltou o config.js com a URL e a chave pública do Supabase.';renderAll();return}
  try{
   const todos=await sb('robo_kv?or=(chave.like.*:status,chave.eq.controle)&select=chave,valor');
   const ctl=todos.find(x=>x.chave==='controle');CTRL=ctl&&ctl.valor?ctl.valor:{pausado:false};
   let lista=todos.filter(x=>x.chave!=='controle').map(x=>x.valor).filter(v=>v&&v.rotulo&&typeof v.par==='string');
   const reais=lista.filter(v=>v.modo==='real');if(reais.length)lista=reais;
-  const trs=await Promise.all(lista.map(v=>sb(`robo_trades?modo=eq.${encodeURIComponent(v.rotulo)}&order=id.desc&limit=50`)));
+  lista.sort((a,b)=>a.par.localeCompare(b.par));
+  const [trs,logs]=await Promise.all([Promise.all(lista.map(v=>sb(`robo_trades?modo=eq.${encodeURIComponent(v.rotulo)}&order=id.desc&limit=50`))),
+   Promise.all(lista.map(v=>sb(`robo_log?modo=eq.${encodeURIComponent(v.rotulo)}&order=id.desc&limit=20&select=criado_em,nivel,mensagem`)))]);
   for(const k in MK)delete MK[k];
   lista.forEach((st,n)=>{const key=st.par.split('/')[0].toUpperCase(),g=st.grafico||{},t=Array.isArray(g.t)?g.t:[],pr=Array.isArray(g.preco)?g.preco:[];
-   const m=MK[key]={par:st.par,rotulo:st.rotulo,modo:String(st.modo||''),d:t.map((x,i)=>({t:new Date(String(x)+'T00:00:00'),k:String(x),c:Number(pr[i])})).filter(x=>isFinite(x.c)),
+   const m=MK[key]={key,par:st.par,rotulo:st.rotulo,modo:String(st.modo||''),
+    d:t.map((x,i)=>({t:new Date(String(x)+'T00:00:00'),k:String(x),c:Number(pr[i])})).filter(x=>isFinite(x.c)),
     mm:Array.isArray(g.media)?g.media.map(v=>v==null?null:Number(v)):null,band:Number(g.banda)||0,linha:String(g.linha||'Média'),
     price:Number(st.preco)||0,cap:Number(st.risco&&st.risco.capital_maximo)||0,livre:Number(st.saldo_livre)||0,pnlDia:Number(st.pnl_dia)||0,tradesDia:Number(st.trades_dia)||0,
-    parado:!!st.parado,upd:st.atualizado_em?new Date(st.atualizado_em):null,risco:st.risco||{}};
+    parado:!!st.parado,upd:st.atualizado_em?new Date(st.atualizado_em):null,risco:st.risco||{},tf:String(st.timeframe||''),est:String(st.estrategia||'')};
    const p=st.posicao;m.qty=p&&p.qtd?Number(p.qtd):0;m.pos=m.qty?{p:Number(p.entrada),stop:Number(p.stop)||null,custo:Number(p.custo)||0,t:new Date(p.quando),k:dkey(p.quando)}:null;m.stop=m.pos?m.pos.stop:null;
    m.trades=[];(trs[n]||[]).forEach(r=>{const q=Number(r.qtd);
     m.trades.push({t:new Date(r.saida_em),k:dkey(r.saida_em),side:'V',p:Number(r.preco_saida),v:q*Number(r.preco_saida)*(1-FEE),r:Number(r.lucro),mot:String(r.motivo||'')});
@@ -326,28 +195,94 @@ async function carregar(){
    m.trades.sort((a,b)=>b.t-a.t);
    m.realizado=(trs[n]||[]).reduce((a,r)=>a+(Number(r.lucro)||0),0);
    m.aberto=m.pos?m.qty*m.price*(1-FEE)-m.pos.custo:0});
-  const ids=new Set(Object.values(MK).flatMap(m=>m.trades.map(t=>m.par+t.side+t.t.getTime())));
-  if(seen)Object.values(MK).forEach(m=>m.trades.forEach(t=>{if(!seen.has(m.par+t.side+t.t.getTime())){const txt=`${t.side==='C'?'Compra':'Venda'} de ${m.par} a ${brl(t.p,0)}${t.r!=null?' · '+money(t.r):''}`;log(t.r!=null&&t.r<0?'crit':'ok','Robô Foxbit: '+txt);toast('Robô Foxbit',txt,1)}}));
+  ORDER=Object.keys(MK);
+  LOGS=logs.flatMap((l,n)=>(l||[]).map(x=>({t:new Date(x.criado_em),n:String(x.nivel||'INFO').toUpperCase(),msg:String(x.mensagem||''),par:lista[n].par}))).sort((a,b)=>b.t-a.t).slice(0,14);
+  const ids=new Set(ORDER.flatMap(k=>MK[k].trades.map(t=>k+t.side+t.t.getTime())));
+  if(seen)ORDER.forEach(k=>MK[k].trades.forEach(t=>{if(!seen.has(k+t.side+t.t.getTime()))toast(`${t.side==='C'?'Compra':'Venda'} de ${MK[k].par} a ${brl(t.p,0)}${t.r!=null?' · '+money(t.r):''}`)}));
   seen=ids;
-  if(!mk||!MK[mk])mk=MK.BTC?'BTC':(Object.keys(MK)[0]||null);
-  fxOn=!CTRL.pausado;lastLoad=new Date();fxErr=Object.keys(MK).length?'':'Nenhum status do robô no Supabase ainda.';loaded=true;
-  $('login').hidden=true;buildTabs();renderFx();render();
- }catch(e){if(e.message==='login')$('login').hidden=false;else{fxErr='Não consegui ler o Supabase: '+e.message;renderFx()}}}
-const totalRes=()=>Object.values(MK).reduce((a,m)=>a+m.realizado+m.aberto,0);
-const stale=m=>!m.upd||(Date.now()-m.upd)>45*60000;
-function buildTabs(){$('tabs').innerHTML=Object.keys(MK).map(k=>`<button class="tab" role="tab" data-mk="${k}">${MK[k].par.replace(/[<>&"]/g,'')}</button>`).join('')}
+  if(!mk||!MK[mk])mk=MK.BTC?'BTC':(ORDER[0]||null);
+  lastLoad=new Date();err=ORDER.length?'':'Nenhum status do robô no Supabase ainda. Ele já rodou na nuvem?';loaded=true;$('login').hidden=true;
+  renderAll();
+ }catch(e){if(e.message==='login')$('login').hidden=false;else{err='Não consegui ler o Supabase: '+e.message;renderAll()}}}
 
+/* ---------- sala ---------- */
+const SLOTS=[[1.2,2.9],[4.7,2.9],[1.2,5.1],[4.7,5.1]];
+const BODY={BTC:'#f2a93b',ETH:'#9fb1f0'};
+function buildRoom(){const key=ORDER.join(',');if(built===key)return;built=key;
+ let st='';
+ st+=quad([P(0,0),P(10,0),P(10,7),P(0,7)],'#2a241e');
+ for(let i=1;i<20;i++)st+=`<polyline points="${pts([P(i*.5,0),P(i*.5,7)])}" stroke="#30291f" fill="none"/>`;
+ st+=quad([P(.8,2.4),P(8,2.4),P(8,6.8),P(.8,6.8)],'#22302f');st+=quad([P(1,2.6),P(7.8,2.6),P(7.8,6.6),P(1,6.6)],'none','stroke="#2f4241" stroke-width="1.5"');
+ const [a1,b1]=P(4.4,3.8);st+=`<ellipse cx="${a1}" cy="${b1}" rx="260" ry="110" fill="url(#poolG)"/>`;
+ st+=quad([P(0,0,0),P(10,0,0),P(10,0,2.5),P(0,0,2.5)],'#1c1a17')+quad([P(0,0,0),P(0,7,0),P(0,7,2.5),P(0,0,2.5)],'#171512');
+ st+=quad([P(0,0,2.5),P(10,0,2.5),P(10,-.18,2.5),P(0,-.18,2.5)],'#3d3628')+quad([P(0,0,2.5),P(0,7,2.5),P(-.18,7,2.5),P(-.18,0,2.5)],'#332d22');
+ st+=quad([P(0,0,0),P(10,0,0),P(10,0,.12),P(0,0,.12)],'#0e0d0b')+quad([P(0,0,0),P(0,7,0),P(0,7,.12),P(0,0,.12)],'#0b0a09');
+ {let w=`<g transform="${onX0(1.6,2.15)}"><rect width="4.6" height="1.55" fill="url(#night)"/>`;let bx=.05;
+  for(const [bw,bh] of [[.35,.9],[.25,.55],[.4,1.1],[.3,.7],[.45,.95],[.3,.5],[.35,1.2],[.4,.8],[.3,.6],[.35,1],[.3,.75]]){if(bx+bw>4.6)break;w+=`<rect x="${bx}" y="${1.55-bh}" width="${bw}" height="${bh}" fill="#18222c"/>`;for(let k=0;k<4;k++)w+=`<rect x="${(bx+.06+((k*37)%10)/10*(bw-.14)).toFixed(2)}" y="${(1.55-bh+.12+k*.18).toFixed(2)}" width=".05" height=".05" fill="#f5d77a" opacity=".75"/>`;bx+=bw+.04}
+  st+=w+`<rect width="4.6" height="1.55" fill="none" stroke="#3d3628" stroke-width=".06"/><line x1="2.3" y1="0" x2="2.3" y2="1.55" stroke="#3d3628" stroke-width=".05"/></g>`}
+ st+=`<g transform="${onY0(.7,2.2)}"><rect width="5.6" height="1.6" rx=".05" fill="url(#scr)" stroke="#e9b949" stroke-opacity=".6" stroke-width=".04"/>
+  <text id="wallT" x=".2" y=".3" font-size=".19" fill="#e9b949" font-family="Chakra Petch" font-weight="600"></text><text id="wallP" x="5.4" y=".3" font-size=".19" fill="#e8f0f1" text-anchor="end" font-family="Chakra Petch"></text>
+  <polygon id="wallBand" fill="#e9b949" opacity=".14"/><polyline id="wallMM" fill="none" stroke="#e9b949" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+  <polyline id="wallL" fill="none" stroke="#dff5f2" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/><g id="wallM"></g></g>`;
+ st+=`<g transform="${onY0(6.8,2.05)}"><rect width="2.7" height="1.35" rx=".05" fill="url(#scr)" stroke="#3d3628" stroke-width=".04"/>
+  <text x=".16" y=".3" font-size=".16" fill="#8ea2a7">Hoje</text><text id="bdDay" x=".16" y=".62" font-size=".3" font-weight="700" fill="#e8f0f1" font-family="Chakra Petch"></text>
+  <text x=".16" y=".9" font-size=".14" fill="#8ea2a7" id="bdLim"></text><text x=".16" y="1.16" font-size=".14" fill="#8ea2a7" id="bdOrd"></text></g>`;
+ const deskC=['#6a5444','#4b3c31','#5a4739'],monC=['#20272a','#101517','#191f21'];
+ ORDER.slice(0,4).forEach((k,n)=>{const [x,y]=SLOTS[n];const m=MK[k];m.home=[x+1.05,y+1.2];
+  st+=box(x,y,2.1,.65,.42,deskC);for(let j=0;j<3;j++){const mx=x+.12+j*.65;st+=box(mx,y+.08,.58,.06,.4,monC,.42)+quad([P(mx+.03,y+.14,.47),P(mx+.55,y+.14,.47),P(mx+.55,y+.14,.79),P(mx+.03,y+.14,.79)],'#2bb5a8',`class="scr-${k}" opacity=".85"`)}
+  st+=box(m.home[0]-.3,m.home[1]-.05,.6,.5,.22,['#3a3020','#2a2318','#31291c']);const [pa,pb]=P(m.home[0],m.home[1]);st+=`<ellipse class="pool-${k}" cx="${pa}" cy="${pb}" rx="70" ry="30" fill="url(#poolV)" opacity="0"/>`});
+ st+=box(8.2,3.2,.7,2.2,.32,['#6b5a3a','#4d4029','#5c4d32'])+box(8.75,3.2,.2,2.2,.7,['#6b5a3a','#4d4029','#5c4d32'])+box(7,3.6,.8,1.2,.25,['#3a3125','#2a231b','#322a20']);
+ st+=box(8.9,.4,.55,.45,.6,['#9aa4a7','#6b7477','#7f888b'])+box(9,.45,.15,.12,.1,['#e9b949','#a88430','#c49a38'],.6);
+ const plant=(x,y,s=1)=>{const [a,b]=P(x,y);return box(x-.18,y-.18,.36,.36,.28,['#8a6a4f','#6b513c','#7a5d45'])+`<ellipse cx="${a}" cy="${b-16*s}" rx="${14*s}" ry="${17*s}" fill="#2f7a4c"/><ellipse cx="${a-5*s}" cy="${b-23*s}" rx="${8*s}" ry="${9*s}" fill="#4ea06b"/><ellipse cx="${a+6*s}" cy="${b-14*s}" rx="${6*s}" ry="${7*s}" fill="#3d8c5a"/>`};
+ st+=plant(.45,.45)+plant(6.4,.45,.8)+plant(9.5,6.5)+plant(.45,6.5);
+ $('static').innerHTML=st;
+ const defs=$('defs'),bg=$('bots');bg.innerHTML='';
+ ORDER.slice(0,4).forEach(k=>{const m=MK[k],body=BODY[k]||'#cfd8dc';
+  if(!$('g-'+k)){const lg=document.createElementNS(NS,'linearGradient');lg.id='g-'+k;lg.setAttribute('x1','0');lg.setAttribute('x2','1');lg.setAttribute('y1','0');lg.setAttribute('y2','1');lg.innerHTML=`<stop offset="0" stop-color="${shade(body,1.12)}"/><stop offset=".55" stop-color="${body}"/><stop offset="1" stop-color="${shade(body,.6)}"/>`;defs.appendChild(lg)}
+  const g=document.createElementNS(NS,'g');g.setAttribute('class','bot');g.dataset.k=k;g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label','Robô '+m.par);
+  const f=`url(#g-${k})`,dk=shade(body,.5),name='Robô '+k,tw=Math.max(name.length*7+26,138);const [x,y]=P(m.home[0],m.home[1]);g.setAttribute('transform',`translate(${x.toFixed(1)},${y.toFixed(1)})`);
+  g.innerHTML=`<ellipse cx="0" cy="0" rx="15" ry="6" fill="rgba(0,0,0,.45)"/><ellipse class="ring" cx="0" cy="0" rx="22" ry="9" fill="none" stroke="#e9b949" stroke-width="2"/>
+  <ellipse cx="0" cy="-1" rx="9" ry="3.5" style="fill:var(--st)" opacity=".35" filter="url(#glow)"/>
+  <g class="b"><rect x="-7" y="-14" width="14" height="6" rx="3" fill="${dk}"/>
+  <rect x="-16" y="-31" width="5" height="13" rx="2.5" fill="${dk}" transform="rotate(10 -13 -31)"/><rect x="11" y="-31" width="5" height="13" rx="2.5" fill="${dk}" transform="rotate(-10 13 -31)"/>
+  <rect x="-11.5" y="-33" width="23" height="22" rx="8" fill="${f}"/><rect x="-9" y="-31" width="4" height="15" rx="2" fill="#fff" opacity=".22"/>
+  <rect x="-5" y="-27" width="10" height="7" rx="2.5" fill="#0a1011"/><rect x="-3" y="-24.6" width="6" height="2.2" rx="1.1" style="fill:var(--st)" filter="url(#glow)"/>
+  <rect x="-14" y="-57" width="28" height="23" rx="10" fill="${f}"/><rect x="-11" y="-55" width="8" height="5" rx="2.5" fill="#fff" opacity=".25"/>
+  <rect x="-11" y="-51" width="22" height="12" rx="6" fill="#0a1011"/><rect x="-7.5" y="-47.5" width="5" height="5" rx="2.5" style="fill:var(--st)" filter="url(#glow)"/><rect x="2.5" y="-47.5" width="5" height="5" rx="2.5" style="fill:var(--st)" filter="url(#glow)"/>
+  <rect x="-16.5" y="-50" width="3" height="8" rx="1.5" fill="${dk}"/><rect x="13.5" y="-50" width="3" height="8" rx="1.5" fill="${dk}"/>
+  <line x1="0" y1="-57" x2="0" y2="-64" stroke="#9aa5ad" stroke-width="2" stroke-linecap="round"/><circle class="lamp" cx="0" cy="-67" r="3.8" style="fill:var(--st)" filter="url(#glow)"/>
+  <g transform="translate(0,-88)"><rect x="${-tw/2}" y="-12" width="${tw}" height="34" rx="10" fill="rgba(12,11,9,.92)" style="stroke:var(--st)" stroke-opacity=".8"/><text x="0" y="2" fill="#e8f0f1" font-size="12" font-weight="600" text-anchor="middle">${esc(name)}</text><text class="st" x="0" y="16" fill="#8ea2a7" font-size="10.5" text-anchor="middle"></text></g></g>`;
+  bg.appendChild(g)})}
+
+function renderRoom(){buildRoom();const fxOn=!CTRL.pausado;
+ ORDER.slice(0,4).forEach(k=>{const m=MK[k],g=document.querySelector(`.bot[data-k="${k}"]`);if(!g)return;
+  const cls=stale(m)?'warn':!fxOn?'warn':m.qty?'pos':'';g.setAttribute('class',`bot ${cls}${k===mk?' sel':''}`);
+  g.querySelector('.st').textContent=stale(m)?'sem atualizar':!fxOn?'pausado':m.qty?`comprado ${money(m.aberto)}`:'no caixa';
+  document.querySelectorAll('.scr-'+k).forEach(e=>e.setAttribute('fill',m.qty?'#3ecf8e':stale(m)||!fxOn?'#f2b33d':'#2bb5a8'));
+  document.querySelectorAll('.pool-'+k).forEach(e=>e.setAttribute('opacity',m.qty?1:0))});
+ const m=mk&&MK[mk];
+ if(m&&m.d.length>1){const w=m.d.slice(-90),o0=m.d.length-w.length;let lo=Infinity,hi=-Infinity;
+  w.forEach((x,i)=>{lo=Math.min(lo,x.c);hi=Math.max(hi,x.c);const v=mmAt(m,i+o0);if(v!=null){lo=Math.min(lo,v*(1-m.band));hi=Math.max(hi,v*(1+m.band))}});
+  const sx=i=>.2+i*(5.2/(w.length-1)),sy=v=>1.48-(v-lo)/((hi-lo)||1)*1.05,wi=new Map(w.map((x,i)=>[x.k,i]));const up=[],dn=[],ml=[];
+  w.forEach((x,i)=>{const v=mmAt(m,i+o0);if(v!=null){up.push(sx(i).toFixed(3)+','+sy(v*(1+m.band)).toFixed(3));dn.unshift(sx(i).toFixed(3)+','+sy(v*(1-m.band)).toFixed(3));ml.push(sx(i).toFixed(3)+','+sy(v).toFixed(3))}});
+  $('wallL').setAttribute('points',w.map((x,i)=>sx(i).toFixed(3)+','+sy(x.c).toFixed(3)).join(' '));$('wallMM').setAttribute('points',ml.join(' '));$('wallBand').setAttribute('points',up.concat(dn).join(' '));
+  $('wallM').innerHTML=m.trades.map(t=>{const i=wi.get(t.k);return i==null?'':`<circle cx="${sx(i).toFixed(3)}" cy="${sy(w[i].c).toFixed(3)}" r=".07" fill="${t.side==='C'?'#3ecf8e':'#ef5350'}"/>`}).join('');
+  $('wallT').textContent=`${m.par} · Foxbit · últimos ${w.length} dias`;$('wallP').textContent=brl(m.price,0)}
+ if(ORDER.length){const day=ORDER.reduce((a,k)=>a+MK[k].pnlDia,0),r=MK[ORDER[0]].risco||{},ord=ORDER.reduce((a,k)=>a+MK[k].tradesDia,0);
+  $('bdDay').textContent=money(day);$('bdDay').setAttribute('fill',day>0?'#3ecf8e':day<0?'#ef5350':'#e8f0f1');
+  $('bdLim').textContent=`meta ${brl(r.meta_dia_reais)} · limite −${brl(r.perda_dia_reais)}`;$('bdOrd').textContent=`${ord} de ${Number(r.max_trades_dia)||0} ordens`}}
+
+/* ---------- gráfico ---------- */
 function drawChart(){const s=$('chart'),W=s.clientWidth,Hh=s.clientHeight;if(!W)return;const m=mk&&MK[mk];
- if(!m||m.d.length<2){s.innerHTML=`<text x="${W/2}" y="${Hh/2}" fill="#6f858a" font-size="14" text-anchor="middle">${loaded?'Sem dados de gráfico ainda':'Entre para carregar os dados do robô'}</text>`;return}
- const n0=W<560?Math.max(0,m.d.length-110):0,D=m.d.slice(n0),n=D.length;
- const pr=W<520?64:80,pl=4,pt=14,pb=24;
+ if(!m||m.d.length<2){s.innerHTML=`<text x="${W/2}" y="${Hh/2}" fill="#6f858a" font-size="14" text-anchor="middle">${loaded?'O robô ainda não gravou o gráfico':'Entre para carregar os dados do robô'}</text>`;return}
+ const n0=W<560?Math.max(0,m.d.length-110):0,D=m.d.slice(n0),n=D.length,pr=W<520?64:80,pl=4,pt=14,pb=24;
  let lo=Infinity,hi=-Infinity;D.forEach((x,i)=>{const v=mmAt(m,i+n0);lo=Math.min(lo,x.c);hi=Math.max(hi,x.c);if(v!=null){lo=Math.min(lo,v*(1-m.band));hi=Math.max(hi,v*(1+m.band))}});
- lo=Math.min(lo,m.price||lo);hi=Math.max(hi,m.price||hi);const pad=(hi-lo)*.08||1;lo-=pad;hi+=pad;
+ if(m.price){lo=Math.min(lo,m.price);hi=Math.max(hi,m.price)}const pad=(hi-lo)*.08||1;lo-=pad;hi+=pad;
  const X=i=>pl+(W-pl-pr)*i/(n-1),Y=v=>pt+(hi-v)/(hi-lo)*(Hh-pt-pb),f0=v=>brl(v,0).replace('R$','').trim();
  let o='';
- for(let g=0;g<=4;g++){const v=lo+(hi-lo)*g/4,y=Y(v);o+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="#223033"/><text x="${W-pr+8}" y="${y+4}" fill="#6f858a" font-size="11">${f0(v)}</text>`}
- D.forEach((x,i)=>{if(i&&x.t.getMonth()!==D[i-1].t.getMonth())o+=`<line x1="${X(i)}" x2="${X(i)}" y1="${pt}" y2="${Hh-pb}" stroke="#1c282b"/><text x="${X(i)+4}" y="${Hh-7}" fill="#6f858a" font-size="11">${x.t.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</text>`});
- const idx=new Map(D.map((x,i)=>[x.k,i]));const at=t=>idx.has(t.k)?idx.get(t.k):(t.t<D[0].t?0:(t.t>D[n-1].t?n-1:null));
+ for(let g=0;g<=4;g++){const v=lo+(hi-lo)*g/4,y=Y(v);o+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="#262b2b"/><text x="${W-pr+8}" y="${y+4}" fill="#7d8c8f" font-size="11">${f0(v)}</text>`}
+ D.forEach((x,i)=>{if(i&&x.t.getMonth()!==D[i-1].t.getMonth())o+=`<line x1="${X(i)}" x2="${X(i)}" y1="${pt}" y2="${Hh-pb}" stroke="#1f2424"/><text x="${X(i)+4}" y="${Hh-7}" fill="#7d8c8f" font-size="11">${x.t.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</text>`});
+ const idx=new Map(D.map((x,i)=>[x.k,i])),at=t=>idx.has(t.k)?idx.get(t.k):(t.t<D[0].t?0:(t.t>D[n-1].t?n-1:null));
  let open=null;[...m.trades].reverse().forEach(t=>{const i=at(t);if(t.side==='C')open=i;else{const j=i??n-1;if(open!=null)o+=`<rect x="${X(open)}" y="${pt}" width="${Math.max(0,X(j)-X(open))}" height="${Hh-pt-pb}" fill="#3ecf8e" opacity=".07"/>`;open=null}});
  if(m.qty&&open!=null)o+=`<rect x="${X(open)}" y="${pt}" width="${X(n-1)-X(open)}" height="${Hh-pt-pb}" fill="#3ecf8e" opacity=".07"/>`;
  const up=[],dn=[],ml=[];D.forEach((x,i)=>{const v=mmAt(m,i+n0);if(v!=null){up.push(X(i).toFixed(1)+','+Y(v*(1+m.band)).toFixed(1));dn.unshift(X(i).toFixed(1)+','+Y(v*(1-m.band)).toFixed(1));ml.push(X(i).toFixed(1)+','+Y(v).toFixed(1))}});
@@ -356,101 +291,84 @@ function drawChart(){const s=$('chart'),W=s.clientWidth,Hh=s.clientHeight;if(!W)
  m.trades.forEach(t=>{const i=idx.get(t.k);if(i==null)return;const x=X(i),y=Y(D[i].c);
   o+=t.side==='C'?`<path d="M${x} ${y+7}l7 11h-14z" fill="#3ecf8e"/><text x="${x}" y="${y+31}" fill="#3ecf8e" font-size="11" font-weight="700" text-anchor="middle">C</text>`:`<path d="M${x} ${y-7}l7 -11h-14z" fill="#ef5350"/><text x="${x}" y="${y-22}" fill="#ef5350" font-size="11" font-weight="700" text-anchor="middle">V</text>`});
  if(m.qty&&m.stop&&m.stop>lo){const y=Y(m.stop);o+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="#ef5350" stroke-dasharray="5 5" stroke-opacity=".8"/><text x="${pl+6}" y="${y-6}" fill="#ef5350" font-size="11">stop ${f0(m.stop)}</text>`}
+ const L=m.d.length,mmL=mmAt(m,L-1);if(!m.qty&&mmL&&m.band){const y=Y(mmL*(1+m.band));o+=`<text x="${W-pr-6}" y="${y-6}" fill="#e9b949" font-size="11" text-anchor="end">compra acima de ${f0(mmL*(1+m.band))}</text>`}
  if(m.price){const ly=Y(m.price);o+=`<rect x="${W-pr+2}" y="${ly-10}" width="${pr-4}" height="20" rx="5" fill="#dff5f2"/><text x="${W-pr/2}" y="${ly+4}" fill="#081012" font-size="11" font-weight="700" text-anchor="middle">${f0(m.price)}</text>`}
  s.innerHTML=o}
 const ro=new ResizeObserver(drawChart);ro.observe($('chart'));
 
-function renderFx(){const m=mk&&MK[mk];
- document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.mk===mk;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
- if(!m){$('fxSub').textContent=fxErr||(loaded?'':'Entre com o login do painel para ver os dados reais.');$('fxPrice').textContent='–';$('fxChg').textContent='';$('fxStats').innerHTML='';$('fxTrades').innerHTML='';$('fxNote').textContent='';FX.status='warn';drawChart();return}
- const L=m.d.length,prev=L>1?m.d[L-1].c:m.price,ch=prev?m.price/prev-1:0,mm=L?mmAt(m,L-1):null,res=m.realizado+m.aberto;
- $('fxSub').textContent=`${m.par} · ${m.linha} com margem de ${(m.band*100).toFixed(0)}% · teto de ${brl(m.cap)} neste mercado · modo ${m.modo}`;
- $('fxPrice').textContent=brl(m.price,0);
- $('fxChg').innerHTML=`<span class="${ch>=0?'up':'down'}">${pct(ch)}</span> desde o último fechamento`;
- $('fxStats').innerHTML=[['Resultado total',money(res),res>=0?'up':'down'],['Posição',m.qty?'Comprado':'No caixa',m.qty?'up':''],['Stop',m.qty&&m.stop?brl(m.stop,0):'–',''],['Distância da média',mm?pct(m.price/mm-1):'–',''],['Hoje',`${money(m.pnlDia)} · ${m.tradesDia} ${m.tradesDia===1?'ordem':'ordens'}`,m.pnlDia>0?'up':m.pnlDia<0?'down':'']].map(([l,v,c])=>`<div><span>${l}</span><b class="${c}">${v}</b></div>`).join('');
- const esc=x=>String(x).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+/* ---------- painéis ---------- */
+function renderKpis(){if(!ORDER.length){$('kpis').innerHTML='';return}
+ const res=totalRes(),day=ORDER.reduce((a,k)=>a+MK[k].pnlDia,0),r=MK[ORDER[0]].risco||{},ord=ORDER.reduce((a,k)=>a+MK[k].tradesDia,0),inPos=ORDER.filter(k=>MK[k].qty).length,cap=ORDER.reduce((a,k)=>a+MK[k].cap,0),anyStale=ORDER.some(k=>stale(MK[k]));
+ const st=CTRL.pausado?['Pausado','warn']:anyStale?['Sem atualizar','warn']:['Operando','up'];
+ $('kpis').innerHTML=[['Resultado total',money(res),res>0?'up':res<0?'down':'','operações fechadas + posição aberta'],['Hoje',money(day),day>0?'up':day<0?'down':'',`meta ${brl(r.meta_dia_reais)} · limite −${brl(r.perda_dia_reais)}`],['Ordens hoje',`${ord} / ${Number(r.max_trades_dia)||0}`,'','limite diário do robô'],['Mercados comprados',`${inPos} / ${ORDER.length}`,inPos?'up':'',ORDER.map(k=>MK[k].par).join(' · ')],['Saldo livre na Foxbit',brl(MK[ORDER[0]].livre),'',`teto do robô ${brl(cap)}`],['Robô',st[0],st[1],`atualizou ${ago(ORDER.map(k=>MK[k].upd).filter(Boolean).sort((a,b)=>b-a)[0])}`]]
+  .map(([l,v,c,s])=>`<div class="k"><b class="num ${c}">${esc(v)}</b><span>${l}</span><small>${esc(s)}</small></div>`).join('')}
+
+function renderFx(){document.querySelectorAll('.tab').forEach(b=>{const on=b.dataset.k===mk;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
+ const m=mk&&MK[mk];
+ if(!m){$('fxTitle').textContent='Gráfico';$('fxSub').textContent=err||'Entre com o login do painel para ver os dados reais.';$('fxPrice').textContent='–';$('fxChg').textContent='';$('fxStats').innerHTML='';$('fxTrades').innerHTML='';drawChart();return}
+ const L=m.d.length,last=L?m.d[L-1].c:m.price,ch=last?m.price/last-1:0,mm=L?mmAt(m,L-1):null,res=m.realizado+m.aberto;
+ $('fxTitle').textContent=`Robô ${m.key} · ${m.par}`;
+ $('fxSub').textContent=`${m.linha} com faixa de ${(m.band*100).toFixed(0)}% · velas ${m.tf==='1d'?'diárias':m.tf} · teto ${brl(m.cap)} · modo ${m.modo}`;
+ $('lgMM').textContent=m.linha;
+ $('fxPrice').textContent=brl(m.price,0);$('fxChg').innerHTML=`<span class="${ch>=0?'up':'down'}">${pct(ch)}</span> desde o último fechamento`;
+ $('fxStats').innerHTML=[['Resultado',money(res),res>0?'up':res<0?'down':''],['Posição',m.qty?'Comprado':'No caixa',m.qty?'up':''],['Stop',m.qty&&m.stop?brl(m.stop,0):'–',''],['Distância da média',mm?pct(m.price/mm-1):'–',''],['Hoje',`${money(m.pnlDia)} · ${m.tradesDia} ${m.tradesDia===1?'ordem':'ordens'}`,m.pnlDia>0?'up':m.pnlDia<0?'down':'']].map(([l,v,c])=>`<div><span>${l}</span><b class="${c}">${v}</b></div>`).join('');
  $('fxTrades').innerHTML=m.trades.length?m.trades.slice(0,8).map(t=>`<tr><td>${ddmm(t.t)}</td><td><span class="tag ${t.side==='C'?'c':'v'}">${t.side==='C'?'Compra':'Venda'}</span></td><td class="r">${brl(t.p,0)}</td><td class="r">${brl(t.v)}</td><td class="r ${t.r===null?'':t.r>=0?'up':'down'}">${t.r===null?'–':money(t.r)}</td><td>${esc(t.mot)}</td></tr>`).join(''):'<tr><td colspan="6">O robô ainda não fez nenhuma operação neste mercado.</td></tr>';
- $('fxNote').innerHTML=`Dados reais do Supabase · robô atualizou ${ago(m.upd)} · página leu às ${lastLoad?hhmm(lastLoad):'–'}${stale(m)?' · <span class="down">o robô está há mais de 45 min sem atualizar</span>':''}`;
- const B=MK.BTC||m,w=B.d.slice(-60),o0=B.d.length-w.length;
- if(w.length>1){let lo=Infinity,hi=-Infinity;w.forEach((k,i)=>{lo=Math.min(lo,k.c);hi=Math.max(hi,k.c);const v=mmAt(B,i+o0);if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v)}});
-  const sx=i=>.18+i*(3.24/(w.length-1)),sy=v=>1.45-(v-lo)/((hi-lo)||1)*.95,wi=new Map(w.map((k,i)=>[k.k,i]));
-  $('wallL').setAttribute('points',w.map((k,i)=>sx(i).toFixed(3)+','+sy(k.c).toFixed(3)).join(' '));
-  $('wallMM').setAttribute('points',w.map((k,i)=>{const v=mmAt(B,i+o0);return v==null?'':sx(i).toFixed(3)+','+sy(v).toFixed(3)}).filter(Boolean).join(' '));
-  $('wallM').innerHTML=B.trades.map(t=>{const i=wi.get(t.k);return i==null?'':`<circle cx="${sx(i).toFixed(3)}" cy="${sy(w[i].c).toFixed(3)}" r=".07" fill="${t.side==='C'?'#3ecf8e':'#ef5350'}"/>`}).join('')}
- $('wallP').textContent=brl(B.price,0);
- FX.status=!fxOn||Object.values(MK).some(stale)?'warn':'ok';drawChart()}
+ drawChart()}
+
+function readMarket(m){const L=m.d.length,mm=L?mmAt(m,L-1):null;if(!mm)return 'Ainda sem média calculada no gráfico gravado.';const b=(m.band*100).toFixed(0);
+ if(m.qty)return `Comprado a ${brl(m.pos.p,0)} (${money(m.aberto)} agora). Vende se o dia fechar abaixo de ${brl(mm*(1-m.band),0)} (média −${b}%)${m.stop?` ou se o preço bater o stop de ${brl(m.stop,0)}`:''}.`;
+ const g=mm*(1+m.band);return m.price<g?`No caixa. Compra se o dia fechar acima de ${brl(g,0)} (média +${b}%). Falta subir ${pct(g/m.price-1).replace('+','')}.`:`No caixa, mas o preço já está acima de ${brl(g,0)}. Se o dia fechar assim, o robô compra na próxima checagem.`}
+
+function renderPanel(){const m=mk&&MK[mk];
+ if(!m){$('panel').innerHTML=`<h2>Robô Foxbit</h2><div class="diag">${esc(err||'Entre com o login do painel do robô para ver os dados reais.')}</div><div class="acts"><button id="bLogin" class="pri">Entrar</button></div>`;return}
+ const L=m.d.length,mm=L?mmAt(m,L-1):null,confirmando=Date.now()-conf<4000,fxOn=!CTRL.pausado;
+ const chip=stale(m)?['Sem atualizar há mais de 45 min','warn']:!fxOn?['Pausado','warn']:m.qty?['Comprado','ok']:['No caixa · esperando sinal','teal'];
+ $('panel').innerHTML=`<h2>Robô ${esc(m.key)}</h2><div class="sub">${esc(m.par)} · Foxbit · atualizou ${ago(m.upd)}</div>
+ <span class="chip ${chip[1]}">${chip[0]}</span>
+ <div class="kv"><div><span>Preço agora</span><b>${brl(m.price,0)}</b></div><div><span>${esc(m.linha)}</span><b>${mm?brl(mm,0):'–'}</b></div>
+ <div><span>${m.qty?'Vende abaixo de':'Compra acima de'}</span><b>${mm?brl(mm*(m.qty?1-m.band:1+m.band),0):'–'}</b></div><div><span>${m.qty?'Stop':'Teto deste robô'}</span><b>${m.qty&&m.stop?brl(m.stop,0):brl(m.cap)}</b></div></div>
+ <div class="diag"><b>Leitura:</b> ${fxOn?readMarket(m):'Robô pausado: não abre posição nova, só cuida do stop do que já está aberto.'}</div>
+ <div class="acts"><button id="bFx" class="${confirmando?'pri':fxOn?'danger':''}">${confirmando?(fxOn?'Toque de novo para pausar':'Toque de novo para retomar'):(fxOn?'Pausar robô':'Retomar robô')}</button></div>
+ <div class="sub" style="margin-top:8px">A pausa vale para todos os mercados a partir do próximo ciclo (~15 min).</div>`}
+
+function renderCheck(){if(!ORDER.length){$('check').innerHTML=`<li class="w"><i>!</i><span>${esc(err||'Entre para conferir.')}</span></li>`;return}
+ const ms=ORDER.map(k=>MK[k]),r=ms[0].risco||{},livre=ms[0].livre,day=ms.reduce((a,m)=>a+m.pnlDia,0),ord=ms.reduce((a,m)=>a+m.tradesDia,0),minLog=LOGS.find(l=>/abaixo do mínimo/i.test(l.msg)),lastErr=LOGS.find(l=>l.n==='ERROR');
+ const items=[
+  [ms.every(m=>m.modo==='real'),'Modo real ligado',ms.map(m=>`${m.par}: ${m.modo}`).join(' · ')],
+  [!ms.some(stale),'Robô rodando na nuvem',`última gravação ${ago(ms.map(m=>m.upd).filter(Boolean).sort((a,b)=>b-a)[0])} (GitHub Actions a cada ~15 min)`],
+  [!CTRL.pausado,'Não está pausado',CTRL.pausado?'Toque em Retomar robô para voltar a abrir posições':'pode abrir posições novas'],
+  [livre>0||ms.some(m=>m.qty)?(minLog?'w':true):false,'Saldo na Foxbit',`livre ${brl(livre)} · teto ${ms.map(m=>`${m.key} ${brl(m.cap)}`).join(', ')}${minLog?' · o log avisou ordem abaixo do mínimo da corretora':''}`],
+  [day>-(Number(r.perda_dia_reais)||Infinity)&&day<(Number(r.meta_dia_reais)||Infinity)&&ord<(Number(r.max_trades_dia)||Infinity),'Limites do dia livres',`hoje ${money(day)} · ${ord} de ${Number(r.max_trades_dia)||0} ordens`],
+  [lastErr?'w':true,'Sem erros recentes no log',lastErr?`${hhmm(lastErr.t)}: ${lastErr.msg}`:'nenhum ERROR nas últimas mensagens'],
+  [ms.some(m=>m.qty)?true:'w','Sinal de entrada',ms.map(m=>{const L=m.d.length,mm=L?mmAt(m,L-1):null;return m.qty?`${m.key} comprado`:mm?`${m.key} falta ${pct(mm*(1+m.band)/m.price-1).replace('+','')}`:`${m.key} sem média`}).join(' · ')]];
+ $('check').innerHTML=items.map(([ok,t,s])=>{const c=ok===true?'y':ok==='w'?'w':'n';return `<li class="${c}"><i>${c==='y'?'✓':c==='w'?'!':'×'}</i><span>${t}<small>${esc(s)}</small></span></li>`}).join('')}
+
+function renderLog(){const col={INFO:'var(--teal)',WARNING:'var(--warn)',ERROR:'var(--crit)'};
+ $('feed').innerHTML=LOGS.length?LOGS.map(l=>`<li><time>${ddmm(l.t)} ${hhmm(l.t)}</time><span><i class="dot" style="background:${col[l.n]||'var(--mute)'}"></i>${esc(l.msg)}</span></li>`).join(''):`<li><time></time><span>${loaded?'Nenhuma mensagem ainda':'–'}</span></li>`}
+
+function renderAll(){
+ $('tabs').innerHTML=ORDER.map(k=>`<button class="tab" role="tab" data-k="${esc(k)}">${esc(MK[k].par)}</button>`).join('');
+ const any=ORDER.some(k=>stale(MK[k]));$('liveDot').className=!loaded?'':any||CTRL.pausado?'warn':'on';
+ $('liveTxt').textContent=!loaded?(err||'Conectando ao robô…'):`Dados reais · lidos às ${hhmm(lastLoad)} · atualiza sozinho a cada 1 min`;
+ renderKpis();renderRoom();renderFx();renderPanel();renderCheck();renderLog()}
 
 async function pausar(){const novo=!CTRL.pausado;if(Date.now()-conf>4000){conf=Date.now();renderPanel();setTimeout(renderPanel,4100);return}conf=0;
  try{await sb('robo_kv',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify({chave:'controle',valor:{pausado:novo,em:new Date().toISOString()},atualizado_em:new Date().toISOString()})});
-  CTRL.pausado=novo;fxOn=!novo;log(novo?'warn':'ok',`Robô Foxbit ${novo?'pausado':'retomado'} (vale a partir do próximo ciclo)`);renderFx();render()}
- catch(e){toast('Robô Foxbit','Não consegui salvar: '+e.message,1);renderPanel()}}
-
-/* ---------- render ---------- */
-function render(){
- const c={ok:0,warn:0,crit:0};SV.forEach(s=>c[s.status]++);
- $('kpis').innerHTML=[['Serviços monitorados',SV.length,''],['Normais',c.ok,'ok'],['Atenção',c.warn,'warn'],['Críticos',c.crit,'crit'],['Disponibilidade 24 h',avail.toFixed(3).replace('.',',')+'%',''],['Robô Foxbit',loaded&&Object.keys(MK).length?money(totalRes()):'–','gold']].map(([l,v,k])=>`<div class="k ${k}"><b class="num">${v}</b><span>${l}</span></div>`).join('');
- $('wallA').textContent=avail.toFixed(3).replace('.',',')+'%';
- $('wallDots').innerHTML=SV.map((s,i)=>`<rect x="${(2.6+(i%5)*.48).toFixed(2)}" y="${(.45+Math.floor(i/5)*.5).toFixed(2)}" width=".38" height=".36" rx=".06" fill="${scr[s.status]}" opacity=".85"/>`).join('');
- $('wallB').textContent=c.crit?`${c.crit} incidente${c.crit>1?'s':''} ativo${c.crit>1?'s':''}`:'Sem incidentes';
- $('incPool').setAttribute('opacity',c.crit?1:0);
- [...ALL].sort((a,b)=>(a.x+a.y)-(b.x+b.y)).forEach(s=>{const [x,y]=P(s.x,s.y);s.el.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;s.el.setAttribute('class',`bot ${s.status}${s.id===sel?' sel':''}`);botsG.appendChild(s.el);
-  if(!s.crypto)document.querySelectorAll('.scr-'+s.id).forEach(e=>e.setAttribute('fill',scr[s.status]))});
- renderPanel();
- $('feed').innerHTML=feed.length?feed.map(f=>`<li><time>${f.t}</time><span><i class="dot" style="background:${col[f.c]}"></i>${f.msg}</span></li>`).join(''):'<li><time></time><span>Nenhum evento</span></li>';
-}
-function renderPanel(){const s=ALL.find(o=>o.id===sel);
- if(s.crypto){const ms=Object.values(MK);
-  if(!ms.length){$('panel').innerHTML=`<h2>Robô Foxbit</h2><div class="sub">robo-cripto (Python) · Foxbit</div><div class="diag">${fxErr||'Entre com o login do painel do robô para ver os dados reais.'}</div><div class="acts"><button id="bLogin">Entrar</button></div>`;return}
-  const res=totalRes(),r=ms[0].risco||{},upd=ms.map(m=>m.upd).filter(Boolean).sort((a,b)=>b-a)[0];
-  const line=m=>{const L=m.d.length,mm=L?mmAt(m,L-1):null,nm=m.par.split('/')[0];if(!mm)return `<b>${nm}</b>: sem média calculada ainda.`;
-   return m.qty?`<b>${nm}</b> comprado a ${brl(m.pos.p,0)}. Sai se fechar abaixo de ${brl(mm*(1-m.band),0)} (média −${(m.band*100).toFixed(0)}%)${m.stop?` ou se bater o stop de ${brl(m.stop,0)}`:''}.`:`<b>${nm}</b> no caixa. Compra se fechar acima de ${brl(mm*(1+m.band),0)} (média +${(m.band*100).toFixed(0)}%)${m.price<mm*(1+m.band)?`; falta ${pct(mm*(1+m.band)/m.price-1).replace('+','')}`:'; o preço já está acima, a compra sai se o candle do dia fechar assim'}.`};
-  const row=m=>`<div><span>${m.par}</span><b class="${m.qty?'up':''}">${m.qty?'Comprado':'No caixa'}</b></div>`;
-  const confirmando=Date.now()-conf<4000;
-  $('panel').innerHTML=`<h2>Robô Foxbit</h2><div class="sub">robo-cripto (Python) · GitHub Actions a cada ~15 min</div>
-  <span class="chip ${!fxOn?'warn':ms.some(stale)?'warn':'gold'}">${!fxOn?'Pausado':ms.some(stale)?'Sem atualizar há mais de 45 min':'Dados reais · operando'}</span>
-  <div class="kv">${ms.map(row).join('')}<div><span>Saldo livre na Foxbit</span><b>${brl(ms[0].livre)}</b></div><div><span>Resultado total</span><b class="${res>=0?'up':'down'}">${money(res)}</b></div></div>
-  <div class="diag"><b>Leitura da IA:</b> ${fxOn?ms.map(line).join('<br>'):'Robô pausado. Não abre posição nova; só cuida do stop do que já está aberto.'}</div>
-  <div class="sub" style="margin-bottom:10px">Limites do dia: perda de ${brl(Number(r.perda_dia_reais)||0)} · meta de ${brl(Number(r.meta_dia_reais)||0)} · até ${Number(r.max_trades_dia)||0} ordens · robô atualizou ${ago(upd)}</div>
-  <div class="acts"><button id="bFx" ${confirmando?'class="pri"':''}>${confirmando?(fxOn?'Toque de novo para pausar':'Toque de novo para retomar'):(fxOn?'Pausar robô':'Retomar robô')}</button><button id="bGo">Ver gráfico</button></div>`;return}
- const m=s.m;
- const bar=(l,v,max,u,d=0)=>{const p=Math.min(100,v/max*100),cc=p>85?'var(--crit)':p>65?'var(--warn)':'var(--ok)';return `<div class="m"><span>${l}</span><div class="bar"><i style="width:${p}%;background:${cc}"></i></div><em>${v.toFixed(d).replace('.',',')} ${u}</em></div>`};
- $('panel').innerHTML=`<h2>${s.name}</h2><div class="sub">${s.host} · ${s.type}</div>
- <span class="chip ${s.status}">${txt[s.status]}${s.ack?' · reconhecido':''}</span>
- ${bar('CPU',m.cpu,100,'%')}${bar('Memória',m.mem,100,'%')}${bar('Latência',m.lat,500,'ms')}${bar('Perda',m.loss,25,'%',1)}
- <div class="diag"><b>${s.status==='ok'?'IA:':'Diagnóstico da IA:'}</b> ${s.status==='ok'?'sem anomalias. Métricas dentro da linha de base das últimas 24 h.':s.status==='crit'?s.dc:s.dw}</div>
- <div class="sub">Últimos alertas</div><ul class="alerts">${s.alerts.length?s.alerts.map(a=>`<li>${a.t} · ${a.m}</li>`).join(''):'<li>Nenhum alerta recente</li>'}</ul>
- <div class="acts" style="margin-top:12px"><button id="bGlpi" ${s.status==='ok'||s.ticket?'disabled':''}>Abrir chamado GLPI</button><button id="bAck" ${s.status==='ok'||s.ack?'disabled':''}>Reconhecer</button></div>
- ${s.ticket?`<div class="ticket">Chamado ${s.ticket} aberto e enviado ao Teams</div>`:''}`}
-
-function tick(){
- SV.forEach(s=>{metrics(s);s.ticks++;const crits=SV.filter(o=>o.status==='crit').length;
-  if(s.status==='ok'&&Math.random()<.02)setStatus(s,'warn');
-  else if(s.status==='warn'){if(Math.random()<.18&&s.ticks>2)setStatus(s,'ok');else if(Math.random()<.07&&crits<3)setStatus(s,'crit')}
-  else if(s.status==='crit'&&s.ticks>6&&Math.random()<.2)setStatus(s,'ok')});
- render()}
+  CTRL.pausado=novo;toast(novo?'Robô pausado. Vale a partir do próximo ciclo.':'Robô retomado.');renderAll()}catch(e){toast('Não consegui salvar: '+e.message);renderPanel()}}
 
 /* ---------- eventos ---------- */
-const pick=e=>{const g=e.target.closest('.bot');if(g){sel=g.dataset.id;render()}};
-botsG.addEventListener('click',pick);botsG.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')pick(e)});
-$('panel').addEventListener('click',e=>{const s=ALL.find(o=>o.id===sel),id=e.target.id;
- if(id==='bGlpi'){s.ticket='#'+(20261100+Math.floor(Math.random()*900));log(s.status,`Chamado ${s.ticket} aberto para ${s.name}`);toast('GLPI',`Chamado ${s.ticket} aberto para ${s.name}`);render()}
- if(id==='bAck'){s.ack=true;log(s.status,`${s.name}: alerta reconhecido`);render()}
- if(id==='bFx')pausar();
- if(id==='bLogin')$('login').hidden=false;
- if(id==='bGo')$('fxCard').scrollIntoView({behavior:'smooth',block:'start'})});
-$('bInc').addEventListener('click',()=>{const ok=SV.filter(s=>s.status!=='crit');if(!ok.length)return;const s=ok[Math.floor(Math.random()*ok.length)];setStatus(s,'crit');sel=s.id;render()});
-$('bPause').addEventListener('click',e=>{running=!running;e.target.textContent=running?'Pausar':'Retomar'});
-$('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){mk=b.dataset.mk;renderFx()}});
-$('bCopy').addEventListener('click',e=>{navigator.clipboard.writeText($('code').textContent).then(()=>e.target.textContent='Copiado',()=>e.target.textContent='Não foi possível copiar')});
-const clock=()=>$('clock').textContent=new Date().toLocaleTimeString('pt-BR');clock();setInterval(clock,1000);
+const pick=k=>{if(MK[k]){mk=k;renderAll()}};
+$('bots').addEventListener('click',e=>{const g=e.target.closest('.bot');if(g)pick(g.dataset.k)});
+$('bots').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const g=e.target.closest('.bot');if(g){e.preventDefault();pick(g.dataset.k)}}});
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b)pick(b.dataset.k)});
+$('panel').addEventListener('click',e=>{if(e.target.id==='bFx')pausar();if(e.target.id==='bLogin')$('login').hidden=false});
+$('bRefresh').addEventListener('click',carregar);
+$('bOut').addEventListener('click',()=>{sair();for(const k in MK)delete MK[k];ORDER=[];loaded=false;built='';$('static').innerHTML='';$('bots').innerHTML='';renderAll()});
+$('fLogin').addEventListener('submit',async e=>{e.preventDefault();$('eLogin').textContent='';try{await auth('password',{email:$('email').value.trim(),password:$('senha').value});$('senha').value='';carregar()}catch(er){$('eLogin').textContent=String(er.message).includes('Invalid')?'E-mail ou senha incorretos.':er.message}});
 
-setStatus(SV[2],'warn');setStatus(SV[0],'crit',1);SV[0].ticks=-6;
-renderFx();render();
-setInterval(()=>{if(running)tick()},3000);
+renderAll();
 if(SESSAO)carregar();else $('login').hidden=false;
 setInterval(()=>{if(SESSAO)carregar()},60000);
-$('fLogin').addEventListener('submit',async e=>{e.preventDefault();$('eLogin').textContent='';try{await auth('password',{email:$('email').value.trim(),password:$('senha').value});$('senha').value='';carregar()}catch(err){$('eLogin').textContent=String(err.message).includes('Invalid')?'E-mail ou senha incorretos.':err.message}});
-$('bSkip').addEventListener('click',()=>{$('login').hidden=true});
 }
 </script>
 </body>
