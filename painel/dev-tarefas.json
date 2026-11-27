@@ -116,8 +116,7 @@
       "titulo": "Sistema de território e regras de guerra",
       "status": "afazer",
       "dono": "Gabi",
-      "detalhe": "Regras de RP para conflitos, horários e limites, para não virar só tiroteio.",
-      "apoio": "Operador BTC"
+      "detalhe": "Regras de RP para conflitos, horários e limites, para não virar só tiroteio."
     },
     {
       "id": "hospital",
@@ -159,8 +158,7 @@
       "titulo": "Concessionária e preços em R$ (qbx_vehicleshop)",
       "status": "fazendo",
       "dono": "Téo",
-      "detalhe": "Pacote 2: lojas Coins Motors, Coins Prime, Marina e Hangar. O Operador ETH revisa os preços em R$ com a tabela da economia.",
-      "apoio": "Operador ETH"
+      "detalhe": "Pacote 2: lojas Coins Motors, Coins Prime, Marina e Hangar. Falta revisar os preços em R$ com a tabela da economia."
     },
     {
       "id": "garagens",
@@ -184,9 +182,8 @@
       "setor": "Economia",
       "titulo": "Salários e dinheiro inicial em R$",
       "status": "testar",
-      "dono": "Operador BTC",
+      "dono": "Gabi",
       "detalhe": "Pacote 3: salários de R$ 50 a R$ 600 a cada 10 min e R$ 10 mil para começar. Testar com personagem novo.",
-      "apoio": "Operador ETH",
       "precisa_silva": true
     },
     {
@@ -204,16 +201,6 @@
       "status": "afazer",
       "dono": "Gabi",
       "detalhe": "Permissões do txAdmin por pessoa, backup do banco, anticheat básico."
-    }
-  ],
-  "apoio_externo": [
-    {
-      "nome": "Operador BTC",
-      "de": "Escritório Foxbit"
-    },
-    {
-      "nome": "Operador ETH",
-      "de": "Escritório Foxbit"
     }
   ]
 }

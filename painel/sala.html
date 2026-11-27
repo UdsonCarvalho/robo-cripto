@@ -99,7 +99,7 @@ table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-bl
 <body>
 <header>
   <div><h1>Agência COINS <span style="font-weight:500;color:var(--mute);font-size:.55em">· Escritório Foxbit</span></h1><div class="live"><i id="liveDot"></i><span id="liveTxt">Conectando ao robô…</span></div></div>
-  <div class="ctr"><a href="dev.html" style="display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);text-decoration:none;font-weight:600;font-size:14px">Estúdio Dev · Coins RJ</a><button id="bRefresh">Atualizar agora</button><button id="bOut">Sair</button></div>
+  <div class="ctr"><button id="bRefresh">Atualizar agora</button><button id="bOut">Sair</button></div>
 </header>
 <section class="kpis" id="kpis"></section>
 <main>
@@ -382,9 +382,7 @@ function atividade(m,n){const f=faseAgora(m),t=agoraBR()%60;
  if(f==='fechado')return {spot:'sofa',pose:'rest',txt:'fim do expediente · descansando'};
  if(f==='almoco')return {spot:'almoco',pose:'stand',item:'plate',txt:'almoçando (volta às 13h)'};
  const c0=(25+n*20)%60;if(t>=c0&&t<c0+5)return {spot:'cafe',pose:'stand',item:'mug',txt:'pausa para o café'};
- const tc=tarefaCidade(m.key);return {spot:'mesa',pose:'sit',txt:tc?`vigiando · cidade: ${tc.setor}`:'vigiando o cruzamento',type:true}}
-let DEV=null;fetch('dev-tarefas.json',{cache:'no-store'}).then(r=>r.json()).then(j=>{DEV=j}).catch(()=>{});
-function tarefaCidade(k){if(!DEV)return null;const n='Operador '+k,ord={fazendo:0,testar:1,afazer:2};return DEV.tarefas.filter(t=>(t.dono===n||t.apoio===n)&&t.status!=='pronto').sort((a,b)=>ord[a.status]-ord[b.status])[0]||null}
+ return {spot:'mesa',pose:'sit',txt:'vigiando o cruzamento',type:true}}
 function spotXY(m,n,spot){return spot==='mesa'?m.home:spot==='cafe'?[.7+n*.55,1.25]:spot==='almoco'?[[7.95,5.25],[7.95,6.2],[9.0,4.8],[8.6,4.6]][n%4]:[10.15,5.55+n*.95]}
 function moveOps(){ORDER.slice(0,4).forEach((k,n)=>{const m=MK[k],g=document.querySelector(`.bot[data-k="${k}"]`);if(!g||!m.home)return;const a=atividade(m,n),xy=spotXY(m,n,a.spot),mv=g.querySelector('.mv');
   const [x,y]=P(xy[0],xy[1]);const alvo=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;m.xy=xy;
