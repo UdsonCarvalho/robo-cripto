@@ -1,0 +1,30 @@
+name: Backtest PETR4 (simulado)
+
+on:
+  push:
+    paths: ["backtests/petr4_orb/backtest_orb.py", ".github/workflows/backtest-petr4.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backtests/petr4_orb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install yfinance pandas
+      - run: python backtest_orb.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backtest-petr4
+          path: |
+            backtests/petr4_orb/relatorio.md
+            backtests/petr4_orb/operacoes.csv
+            backtests/petr4_orb/candles_petr4_5m.csv
