@@ -97,10 +97,12 @@ table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-bl
 <main>
   <div class="col">
     <div class="scene">
-      <svg id="svg" viewBox="-280 -150 650 505" role="img" aria-label="Escritório isométrico com um operador por mercado">
+      <svg id="svg" viewBox="-318 -160 715 575" role="img" aria-label="Escritório isométrico com um operador por mercado">
         <defs id="defs">
           <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
           <radialGradient id="poolG"><stop offset="0" stop-color="#e9b949" stop-opacity=".2"/><stop offset="1" stop-color="#e9b949" stop-opacity="0"/></radialGradient>
+          <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4"/></filter>
+          <radialGradient id="wash"><stop offset="0" stop-color="#f5d9a0" stop-opacity=".12"/><stop offset="1" stop-color="#f5d9a0" stop-opacity="0"/></radialGradient>
           <radialGradient id="poolV"><stop offset="0" stop-color="#3ecf8e" stop-opacity=".28"/><stop offset="1" stop-color="#3ecf8e" stop-opacity="0"/></radialGradient>
           <linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0c1a2a"/><stop offset="1" stop-color="#2a3340"/></linearGradient>
           <linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dff5f2" stop-opacity=".22"/><stop offset="1" stop-color="#dff5f2" stop-opacity="0"/></linearGradient>
@@ -209,35 +211,79 @@ async function carregar(){
  }catch(e){if(e.message==='login')$('login').hidden=false;else{err='Não consegui ler o Supabase: '+e.message;renderAll()}}}
 
 /* ---------- sala ---------- */
-const SLOTS=[[1.3,3.1],[4.8,3.1],[1.3,5.2],[4.8,5.2]];
-const LOOK={BTC:{shirt:'#e39b2d',hair:'#2a1c14',skin:'#c98d63'},ETH:{shirt:'#6f86e0',hair:'#151515',skin:'#e0b08a'}};
-const LOOKX=[{shirt:'#3fae8a',hair:'#3b2416',skin:'#a8714f'},{shirt:'#c2577a',hair:'#1d1d1d',skin:'#f0c8a6'}];
 const onY=(x,y,z)=>{const [a,b]=P(x,y,z);return `matrix(${C},${H},0,${S},${a.toFixed(1)},${b.toFixed(1)})`};
 const onXr=(y,z)=>{const [a,b]=P(0,y,z);return `matrix(${C},${-H},0,${S},${a.toFixed(1)},${b.toFixed(1)})`};
-const WALLS=[{t:()=>onY(.5,0,2.25),w:5.8,h:1.65},{t:()=>onXr(6.5,2.2),w:5.1,h:1.6}];
+const RX=11,RY=8.5;
+const LOOK={BTC:{shirt:'#e39b2d',hair:'#2a1c14',skin:'#c98d63'},ETH:{shirt:'#6f86e0',hair:'#151515',skin:'#e0b08a'}};
+const LOOKX=[{shirt:'#3fae8a',hair:'#3b2416',skin:'#a8714f'},{shirt:'#c2577a',hair:'#1d1d1d',skin:'#f0c8a6'}];
+const SLOTS=[[1.5,3.1],[5.3,3.1],[1.5,5.7],[5.3,5.7]];
+const WALLS=[{t:()=>onY(.5,0,2.3),w:5.9,h:1.7},{t:()=>onXr(5.7,2.25),w:4.9,h:1.65}];
+function sky(){const h=new Date().getHours()+new Date().getMinutes()/60;
+ if(h>=7&&h<17)return {top:'#7fb6e0',bot:'#d8ebf6',city:'#8ea3b4',win:'#e9eef2',lit:0,spill:.07};
+ if(h>=17&&h<19.5||h>=5.5&&h<7)return {top:'#33406b',bot:'#e7a06a',city:'#2b3346',win:'#f5d77a',lit:.5,spill:.035};
+ return {top:'#0b1626',bot:'#23324a',city:'#151d28',win:'#f5d77a',lit:.85,spill:0}}
 function buildRoom(){const key=ORDER.join(',');if(built===key)return;built=key;
- let st='';
- st+=quad([P(0,0),P(10,0),P(10,7),P(0,7)],'#2a241e');
- for(let i=1;i<20;i++)st+=`<polyline points="${pts([P(i*.5,0),P(i*.5,7)])}" stroke="#30291f" fill="none"/>`;
- st+=quad([P(.8,2.6),P(8,2.6),P(8,6.9),P(.8,6.9)],'#22302f');st+=quad([P(1,2.8),P(7.8,2.8),P(7.8,6.7),P(1,6.7)],'none','stroke="#2f4241" stroke-width="1.5"');
- const [a1,b1]=P(4.4,4);st+=`<ellipse cx="${a1}" cy="${b1}" rx="260" ry="110" fill="url(#poolG)"/>`;
- st+=quad([P(0,0,0),P(10,0,0),P(10,0,2.5),P(0,0,2.5)],'#1c1a17')+quad([P(0,0,0),P(0,7,0),P(0,7,2.5),P(0,0,2.5)],'#171512');
- st+=quad([P(0,0,2.5),P(10,0,2.5),P(10,-.18,2.5),P(0,-.18,2.5)],'#3d3628')+quad([P(0,0,2.5),P(0,7,2.5),P(-.18,7,2.5),P(-.18,0,2.5)],'#332d22');
- st+=quad([P(0,0,0),P(10,0,0),P(10,0,.12),P(0,0,.12)],'#0e0d0b')+quad([P(0,0,0),P(0,7,0),P(0,7,.12),P(0,0,.12)],'#0b0a09');
- // telões de mercado (parede do fundo e parede da esquerda)
- WALLS.forEach((W,i)=>{st+=`<g transform="${W.t()}"><rect x="-.06" y="-.06" width="${W.w+.12}" height="${W.h+.12}" rx=".06" fill="#0a0908"/><rect width="${W.w}" height="${W.h}" rx=".04" fill="url(#scr)" id="wallB${i}" stroke="#3d3628" stroke-width=".035"/><g id="wall${i}"></g></g>`});
- // quadro do dia
- st+=`<g transform="${onY(6.75,0,2.2)}"><rect x="-.06" y="-.06" width="2.92" height="1.57" rx=".06" fill="#0a0908"/><rect width="2.8" height="1.45" rx=".04" fill="url(#scr)" stroke="#3d3628" stroke-width=".035"/><g id="board"></g></g>`;
- const deskC=['#6a5444','#4b3c31','#5a4739'],monC=['#20272a','#101517','#191f21'];
- ORDER.slice(0,4).forEach((k,n)=>{const [x,y]=SLOTS[n];const m=MK[k];m.home=[x+1.05,y+1.15];
-  st+=box(x,y,2.1,.7,.42,deskC)+box(x+.55,y+.42,.9,.22,.02,['#1a1a1a','#111','#151515'],.42);
-  for(let j=0;j<3;j++){const mx=x+.12+j*.65;st+=box(mx+.24,y+.1,.1,.06,.06,monC,.42)+box(mx,y+.06,.58,.06,.42,monC,.48)+`<g transform="${onY(mx+.03,y+.12,.86)}"><rect width=".52" height=".34" fill="#081010" class="scr-${k}" stroke-width=".012"/><g id="mon-${k}-${j}"></g></g>`}
+ let st='';const sh=(x,y,w,d,o=.45)=>quad([P(x-.08,y-.02),P(x+w+.12,y-.02),P(x+w+.12,y+d+.14),P(x-.08,y+d+.14)],'#000',`opacity="${o}" filter="url(#shadow)"`);
+ // piso de tábuas
+ st+=quad([P(0,0),P(RX,0),P(RX,RY),P(0,RY)],'#3a2f25');
+ for(let j=0;j<RY/.5;j++){let x=(j%3)*.7;const y=j*.5;while(x<RX){const L=Math.min(RX-x,1.6+((j*7+Math.floor(x))%3)*.4),tone=['#3d3127','#372c23','#41352a','#3a2e24'][(j+Math.floor(x*3))%4];
+  st+=quad([P(x,y),P(x+L,y),P(x+L,y+.5),P(x,y+.5)],tone,'stroke="#2c231b" stroke-width=".6"');x+=L}}
+ st+=quad([P(0,0),P(RX,0),P(RX,.45),P(0,.45)],'#000','opacity=".22"')+quad([P(0,0),P(.45,0),P(.45,RY),P(0,RY)],'#000','opacity=".22"');
+ // paredes com painéis, rodapé e moldura
+ st+=quad([P(0,0,0),P(RX,0,0),P(RX,0,2.7),P(0,0,2.7)],'#26231f')+quad([P(0,0,0),P(0,RY,0),P(0,RY,2.7),P(0,0,2.7)],'#1f1c19');
+ for(let i=1;i<RX;i++)st+=`<polyline points="${pts([P(i,0,.14),P(i,0,2.62)])}" stroke="#1d1a17" stroke-width="1"/>`;
+ for(let i=1;i<RY;i++)st+=`<polyline points="${pts([P(0,i,.14),P(0,i,2.62)])}" stroke="#191714" stroke-width="1"/>`;
+ st+=quad([P(0,0,.95),P(RX,0,.95),P(RX,0,1.0),P(0,0,1.0)],'#2e2a25')+quad([P(0,0,.95),P(0,RY,.95),P(0,RY,1.0),P(0,0,1.0)],'#272420');
+ st+=quad([P(0,0,0),P(RX,0,0),P(RX,0,.14),P(0,0,.14)],'#151311')+quad([P(0,0,0),P(0,RY,0),P(0,RY,.14),P(0,0,.14)],'#11100e');
+ st+=quad([P(0,0,2.62),P(RX,0,2.62),P(RX,0,2.7),P(0,0,2.7)],'#3a352d')+quad([P(0,0,2.62),P(0,RY,2.62),P(0,RY,2.7),P(0,0,2.7)],'#332e27');
+ st+=quad([P(0,0,2.7),P(RX,0,2.7),P(RX,-.2,2.7),P(0,-.2,2.7)],'#4a4235')+quad([P(0,0,2.7),P(0,RY,2.7),P(-.2,RY,2.7),P(-.2,0,2.7)],'#40392e');
+ [[3.4,0],[8.2,0]].forEach(([x])=>{const [a,b]=P(x,0,2.45);st+=`<ellipse cx="${a}" cy="${b+18}" rx="120" ry="70" fill="url(#wash)"/>`});
+ {const [a,b]=P(0,4.5,2.45);st+=`<ellipse cx="${a}" cy="${b+18}" rx="110" ry="65" fill="url(#wash)"/>`}
+ // janela (céu conforme a hora de verdade)
+ const k0=sky();st+=`<defs><linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${k0.top}"/><stop offset="1" stop-color="${k0.bot}"/></linearGradient></defs>`;
+ {let w=`<g transform="${onXr(8.05,2.25)}"><rect x="-.08" y="-.08" width="2.06" height="1.56" fill="#4a4235"/><rect width="1.9" height="1.4" fill="url(#skyG)"/>`;let bx=0;
+  for(const [bw,bh] of [[.28,.6],[.2,.38],[.32,.8],[.22,.5],[.3,.66],[.26,.42],[.3,.72]]){if(bx>=1.9)break;const ww=Math.min(bw,1.9-bx);w+=`<rect x="${bx.toFixed(2)}" y="${(1.4-bh).toFixed(2)}" width="${ww.toFixed(2)}" height="${bh}" fill="${k0.city}"/>`;
+   if(k0.lit)for(let q=0;q<3;q++)w+=`<rect x="${(bx+.05+q*.07).toFixed(2)}" y="${(1.4-bh+.08+q*.12).toFixed(2)}" width=".035" height=".04" fill="${k0.win}" opacity="${k0.lit}"/>`;bx+=bw+.02}
+  w+=`<line x1=".95" y1="0" x2=".95" y2="1.4" stroke="#4a4235" stroke-width=".05"/><line x1="0" y1=".7" x2="1.9" y2=".7" stroke="#4a4235" stroke-width=".035"/></g>`;st+=w}
+ st+=box(0,6.1,.14,1.98,.06,['#5a5042','#3f382e','#4d4438'],.82);
+ if(k0.spill)st+=quad([P(.2,6.2),P(2.6,6.6),P(2.6,8.4),P(.2,8.1)],'#fff7e0',`opacity="${k0.spill}"`);
+ // telões e quadro do dia
+ WALLS.forEach((W,i)=>{st+=`<g transform="${W.t()}"><rect x="-.07" y="-.07" width="${W.w+.14}" height="${W.h+.14}" rx=".05" fill="#0a0908"/><rect width="${W.w}" height="${W.h}" rx=".03" fill="url(#scr)" id="wallB${i}" stroke="#3d3628" stroke-width=".03"/><g id="wall${i}"></g></g>`});
+ {const [a,b]=P(3.45,0,.62);st+=`<ellipse cx="${a}" cy="${b}" rx="150" ry="22" fill="#2bb5a8" opacity=".05"/>`}
+ st+=`<g transform="${onY(6.6,0,2.2)}"><rect x="-.06" y="-.06" width="2.92" height="1.57" rx=".05" fill="#0a0908"/><rect width="2.8" height="1.45" rx=".03" fill="url(#scr)" stroke="#3d3628" stroke-width=".03"/><g id="board"></g></g>`;
+ // relógio de parede com a hora real
+ st+=`<g transform="${onY(10.05,0,2.3)}"><circle cx=".38" cy=".38" r=".36" fill="#e8e2d6" stroke="#2a2621" stroke-width=".05"/>${Array.from({length:12},(_,i)=>{const a=i*Math.PI/6;return `<line x1="${(.38+Math.sin(a)*.27).toFixed(3)}" y1="${(.38-Math.cos(a)*.27).toFixed(3)}" x2="${(.38+Math.sin(a)*.31).toFixed(3)}" y2="${(.38-Math.cos(a)*.31).toFixed(3)}" stroke="#2a2621" stroke-width="1" vector-effect="non-scaling-stroke"/>`}).join('')}
+  <line id="clkH" x1=".38" y1=".38" stroke="#1d1a17" stroke-width="2.4" stroke-linecap="round" vector-effect="non-scaling-stroke"/><line id="clkM" x1=".38" y1=".38" stroke="#1d1a17" stroke-width="1.6" stroke-linecap="round" vector-effect="non-scaling-stroke"/><circle cx=".38" cy=".38" r=".025" fill="#c0392b"/></g>`;
+ // tapete
+ st+=quad([P(.9,2.7),P(8,2.7),P(8,8),P(.9,8)],'#1f2c2c')+quad([P(1.05,2.85),P(7.85,2.85),P(7.85,7.85),P(1.05,7.85)],'none','stroke="#3b5150" stroke-width="1.2"')+quad([P(1.25,3.05),P(7.65,3.05),P(7.65,7.65),P(1.25,7.65)],'none','stroke="#2c3d3c" stroke-width="1"');
+ const [a1,b1]=P(4.6,4.8);st+=`<ellipse cx="${a1}" cy="${b1}" rx="280" ry="120" fill="url(#poolG)"/>`;
+ // estante e cafeteira
+ st+=sh(9.6,.1,1.25,.45)+box(9.6,.08,1.25,.42,1.75,['#4a3a2c','#3a2d22','#433426']);
+ for(let r=0;r<4;r++){const z=.12+r*.42;st+=quad([P(9.66,.5,z),P(10.79,.5,z),P(10.79,.5,z+.36),P(9.66,.5,z+.36)],'#2a2119');let x=9.7;while(x<10.7){const bw=.06+((r*5+Math.round(x*40))%4)*.025,bh=.22+((r+Math.round(x*30))%3)*.05;st+=quad([P(x,.5,z),P(x+bw,.5,z),P(x+bw,.5,z+bh),P(x,.5,z+bh)],['#8c3b32','#2f5d73','#b08a3e','#4c6b45','#6d5a8a','#c9c2b3'][(r+Math.round(x*17))%6]);x+=bw+.015}}
+ st+=sh(.25,.3,1.1,.5)+box(.25,.25,1.1,.5,.85,['#4a3a2c','#3a2d22','#433426'])+box(.45,.33,.36,.3,.42,['#2a2d30','#1a1c1e','#222528'],.85)+box(.52,.33,.22,.04,.1,['#e9b949','#a88430','#c49a38'],1.05)+box(.95,.38,.14,.14,.14,['#f2efe9','#c9c3b8','#ddd7cc'],.85);
+ // mesas dos operadores
+ const deskTop=['#7a6350','#56473a','#67533f'],leg=['#2b2b2b','#1c1c1c','#242424'],monC=['#22282b','#121618','#1a1f22'];
+ ORDER.slice(0,4).forEach((k,n)=>{const [x,y]=SLOTS[n],w=2.3,d=.78,m=MK[k];m.home=[x+1.05,y+1.2];
+  st+=sh(x,y,w,d,.5);
+  st+=box(x+.06,y+.06,.06,.06,.42,leg)+box(x+w-.6,y+.08,.52,.62,.4,['#4d3f33','#3a2f26','#43372c'])+box(x+.06,y+d-.12,.06,.06,.42,leg);
+  st+=quad([P(x+w-.58,y+.7,.3),P(x+w-.12,y+.7,.3),P(x+w-.12,y+.7,.31),P(x+w-.58,y+.7,.31)],'#2a221b');
+  st+=box(x,y,w,d,.05,deskTop,.42);
+  st+=quad([P(x+.1,y+.12,.47),P(x+2.1,y+.12,.47),P(x+2.1,y+.62,.47),P(x+.1,y+.62,.47)],'#2bb5a8',`opacity=".09" class="dglow-${k}"`);
+  for(let j=0;j<3;j++){const mx=x+.14+j*.68;st+=box(mx+.24,y+.1,.12,.12,.02,monC,.47)+box(mx+.28,y+.12,.04,.04,.1,monC,.47)+box(mx,y+.08,.6,.05,.4,monC,.55)+`<g transform="${onY(mx+.03,y+.13,.92)}"><rect width=".54" height=".34" fill="#071010" class="scr-${k}" stroke-width=".012"/><g id="mon-${k}-${j}"></g></g>`}
+  st+=box(x+.62,y+.44,.82,.2,.025,['#2a2d30','#1a1c1e','#222528'],.47)+box(x+1.55,y+.5,.1,.14,.025,['#2a2d30','#1a1c1e','#222528'],.47);
+  st+=box(x+1.9,y+.4,.11,.11,.13,['#f2efe9','#c9c3b8','#ddd7cc'],.47);const [ma,mb]=P(x+1.955,y+.455,.6);st+=`<ellipse cx="${ma}" cy="${mb}" rx="3.6" ry="1.8" fill="#3b2416"/>`;
+  st+=box(x+.12,y+.5,.14,.14,.02,leg,.47);const [l1,l2]=P(x+.19,y+.57,.49),[l3,l4]=P(x+.3,y+.4,.95);st+=`<polyline points="${l1},${l2} ${l1-2},${l2-16} ${l3},${l4}" stroke="#2b2b2b" stroke-width="2.4" fill="none"/><path d="M${l3-7} ${l4} l14 0 l-4 -7 l-6 0 z" fill="#3a3a3a"/><ellipse cx="${l3}" cy="${l4+14}" rx="26" ry="9" fill="#f5d77a" opacity=".13"/>`;
   const [pa,pb]=P(m.home[0],m.home[1]);st+=`<ellipse class="pool-${k}" cx="${pa}" cy="${pb}" rx="80" ry="34" fill="url(#poolV)" opacity="0"/>`});
- st+=box(8.2,3.4,.7,2.2,.32,['#6b5a3a','#4d4029','#5c4d32'])+box(8.75,3.4,.2,2.2,.7,['#6b5a3a','#4d4029','#5c4d32'])+box(7.1,3.8,.8,1.2,.25,['#3a3125','#2a231b','#322a20'])+box(7.3,4.1,.18,.18,.12,['#e8e2d6','#b9b2a5','#d0c9bc'],.25);
- st+=box(9.0,.35,.5,.42,.62,['#9aa4a7','#6b7477','#7f888b'])+box(9.1,.4,.14,.12,.1,['#e9b949','#a88430','#c49a38'],.62);
- const plant=(x,y,s=1)=>{const [a,b]=P(x,y);return box(x-.18,y-.18,.36,.36,.28,['#8a6a4f','#6b513c','#7a5d45'])+`<ellipse cx="${a}" cy="${b-16*s}" rx="${14*s}" ry="${17*s}" fill="#2f7a4c"/><ellipse cx="${a-5*s}" cy="${b-23*s}" rx="${8*s}" ry="${9*s}" fill="#4ea06b"/><ellipse cx="${a+6*s}" cy="${b-14*s}" rx="${6*s}" ry="${7*s}" fill="#3d8c5a"/>`};
- st+=plant(.45,.45)+plant(6.45,.4,.75)+plant(9.5,6.5)+plant(.45,6.6);
- $('static').innerHTML=st;
+ // lounge: sofá, mesa de centro, luminária, bebedouro, plantas
+ st+=quad([P(7.9,4.5),P(10.8,4.5),P(10.8,7.6),P(7.9,7.6)],'#2b2420')+quad([P(8.05,4.65),P(10.65,4.65),P(10.65,7.45),P(8.05,7.45)],'none','stroke="#3e342c" stroke-width="1"');
+ st+=sh(9.9,4.8,.85,2.3)+box(10.35,4.8,.4,2.3,.75,['#41605c','#2c4542','#365350'])+box(9.9,4.8,.85,2.3,.32,['#4b6d68','#33504c','#3d5c58'])+box(9.9,4.8,.85,.25,.55,['#41605c','#2c4542','#365350'])+box(9.9,6.85,.85,.25,.55,['#41605c','#2c4542','#365350']);
+ st+=box(9.95,5.1,.4,.85,.08,['#56807a','#3d5f5a','#476e69'],.32)+box(9.95,6,.4,.82,.08,['#56807a','#3d5f5a','#476e69'],.32);
+ st+=sh(8.4,5.3,.9,1.3,.35)+box(8.45,5.35,.06,.06,.3,leg)+box(9.2,6.55,.06,.06,.3,leg)+box(8.45,6.55,.06,.06,.3,leg)+box(8.4,5.3,.9,1.3,.04,['#7a6350','#56473a','#67533f'],.3)+box(8.65,5.7,.12,.12,.1,['#f2efe9','#c9c3b8','#ddd7cc'],.34)+box(8.85,6.05,.3,.22,.03,['#c94f3d','#8f372a','#a94333'],.34);
+ {const [a,b]=P(10.55,4.3),[c,d]=P(10.55,4.3,1.55);st+=box(10.47,4.22,.16,.16,.03,leg)+`<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="#2b2b2b" stroke-width="2.4"/><path d="M${c-10} ${d+8} L${c+10} ${d+8} L${c+6} ${d-6} L${c-6} ${d-6}Z" fill="#e9dfc8"/><ellipse cx="${a}" cy="${b-4}" rx="70" ry="28" fill="#f5d77a" opacity=".08"/>`}
+ st+=sh(10.4,7.75,.4,.4)+box(10.4,7.75,.4,.4,.75,['#e8e8e8','#b9b9b9','#d0d0d0'])+box(10.45,7.8,.3,.3,.4,['#7fb6e0','#5a8fb8','#6aa3cd'],.75);
+ const plant=(x,y,s=1)=>{const [a,b]=P(x,y);return sh(x-.2,y-.2,.4,.4,.35)+box(x-.18,y-.18,.36,.36,.3,['#8a6a4f','#6b513c','#7a5d45'])+`<ellipse cx="${a}" cy="${b-17*s}" rx="${15*s}" ry="${18*s}" fill="#2f7a4c"/><ellipse cx="${a-6*s}" cy="${b-25*s}" rx="${8*s}" ry="${9*s}" fill="#4ea06b"/><ellipse cx="${a+7*s}" cy="${b-15*s}" rx="${6*s}" ry="${7*s}" fill="#3d8c5a"/><ellipse cx="${a+2*s}" cy="${b-31*s}" rx="${5*s}" ry="${6*s}" fill="#5bb27a"/>`};
+ st+=plant(.5,1.25)+plant(6.45,.45,.75)+plant(.5,8.0,1.1)+plant(7.6,8.05,.9);
+ $('static').innerHTML=st;tickClock();
  const bg=$('bots');bg.innerHTML='';
  ORDER.slice(0,4).forEach((k,n)=>{const m=MK[k],L=LOOK[k]||LOOKX[n%2];
   const g=document.createElementNS(NS,'g');g.setAttribute('class','bot');g.dataset.k=k;g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label','Operador '+m.par);
@@ -288,12 +334,14 @@ function monitors(k){const m=MK[k];if(!m)return;const w=m.d.slice(-30).map(x=>x.
  g1.innerHTML=`<line x1=".03" x2=".49" y1=".17" y2=".17" stroke="#fff" stroke-opacity=".15" vector-effect="non-scaling-stroke"/>`+rets.map((r,i)=>{const h=Math.abs(r)/mx*.13;return `<rect x="${(.04+i*.032).toFixed(3)}" y="${(r>=0?.17-h:.17).toFixed(3)}" width=".022" height="${h.toFixed(3)}" fill="${r>=0?'#3ecf8e':'#ef5350'}"/>`}).join('');
  const c=m.qty?'#3ecf8e':'#2bb5a8';g2.innerHTML=`<rect x=".04" y=".04" width=".2" height=".06" rx=".02" fill="${c}"/>`+[.15,.2,.25].map((y,i)=>`<rect x=".04" y="${y}" width="${[.4,.3,.36][i]}" height=".025" fill="#fff" opacity=".25"/>`).join('')+(m.qty?`<rect x=".3" y=".04" width=".18" height=".06" rx=".02" fill="${m.aberto>=0?'#3ecf8e':'#ef5350'}" opacity=".8"/>`:'')}
 
+function tickClock(){const h=$('clkH'),mi=$('clkM');if(!h)return;const d=new Date(),am=(d.getMinutes()/60)*2*Math.PI,ah=((d.getHours()%12)+d.getMinutes()/60)/12*2*Math.PI;h.setAttribute('x2',(.38+Math.sin(ah)*.17).toFixed(3));h.setAttribute('y2',(.38-Math.cos(ah)*.17).toFixed(3));mi.setAttribute('x2',(.38+Math.sin(am)*.26).toFixed(3));mi.setAttribute('y2',(.38-Math.cos(am)*.26).toFixed(3))}
+setInterval(tickClock,30000);
 function renderRoom(){buildRoom();const fxOn=!CTRL.pausado;
  ORDER.slice(0,4).forEach(k=>{const m=MK[k],g=document.querySelector(`.bot[data-k="${k}"]`);if(!g)return;
   const cls=stale(m)?'warn':!fxOn?'warn':m.qty?'pos':'';g.setAttribute('class',`bot ${cls}${k===mk?' sel':''}`);
   g.querySelector('.st').textContent=stale(m)?'sem atualizar':!fxOn?'pausado':m.qty?`comprado ${money(m.aberto)}`:'no caixa · vigiando';
   document.querySelectorAll('.scr-'+k).forEach(e=>e.setAttribute('stroke',m.qty?'#3ecf8e':stale(m)||!fxOn?'#f2b33d':'#2bb5a8'));
-  document.querySelectorAll('.pool-'+k).forEach(e=>e.setAttribute('opacity',m.qty?1:0));monitors(k)});
+  document.querySelectorAll('.pool-'+k).forEach(e=>e.setAttribute('opacity',m.qty?1:0));document.querySelectorAll('.dglow-'+k).forEach(e=>e.setAttribute('fill',m.qty?'#3ecf8e':'#2bb5a8'));monitors(k)});
  WALLS.forEach((W,i)=>{const k=ORDER[i],el=$('wall'+i);if(!el)return;wallChart(el,k?MK[k]:null,W.w,W.h,k===mk);$('wallB'+i).setAttribute('stroke',k&&k===mk?'#e9b949':'#3d3628')});
  const bd=$('board');if(bd&&ORDER.length){const day=ORDER.reduce((a,k)=>a+MK[k].pnlDia,0),r=MK[ORDER[0]].risco||{},ord=ORDER.reduce((a,k)=>a+MK[k].tradesDia,0),mxo=Number(r.max_trades_dia)||3;
   const lim=Number(r.perda_dia_reais)||2,meta=Number(r.meta_dia_reais)||5,x0=.16,x1=2.64,z=x0+(x1-x0)*lim/(lim+meta),cur=Math.max(-lim,Math.min(meta,day)),xc=x0+(x1-x0)*(cur+lim)/(lim+meta);
