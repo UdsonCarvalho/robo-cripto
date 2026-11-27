@@ -1,5 +1,5 @@
 {
-  "atualizado_em": "2026-11-27T17:55:00Z",
+  "atualizado_em": "2026-11-27T18:05:00Z",
   "cidade": "Coins RJ Roleplay",
   "base": "Qbox (qbx_core) via txAdmin",
   "equipe": [
@@ -141,7 +141,7 @@
       "titulo": "PMERJ e Polícia Civil (qbx_policejob)",
       "status": "testar",
       "dono": "Rafa",
-      "detalhe": "Pacote 1 e 2: patentes da PMERJ, PCERJ e PRF e delegacias com nomes cariocas. Falta: armamento e prisão (próximo pacote).",
+      "detalhe": "Pacotes 1, 2 e 4: patentes, delegacias cariocas, arsenal por patente (fuzil só a partir de Sargento), multas em R$ no padrão do CTB, placa PMERJ e Código Penal. Falta: prisão (resource qbx_prison).",
       "precisa_silva": true
     },
     {
@@ -201,6 +201,14 @@
       "status": "afazer",
       "dono": "Gabi",
       "detalhe": "Permissões do txAdmin por pessoa, backup do banco, anticheat básico."
+    },
+    {
+      "id": "prisao",
+      "setor": "Polícia",
+      "titulo": "Prisão (qbx_prison)",
+      "status": "afazer",
+      "dono": "Rafa",
+      "detalhe": "Instalar e configurar a cadeia para o /jail levar o preso e cumprir a pena do Código Penal."
     }
   ]
 }
