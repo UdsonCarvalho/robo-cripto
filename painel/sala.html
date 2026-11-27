@@ -75,12 +75,14 @@ td{padding:7px 8px;border-bottom:1px solid #1d282b}td.r,th.r{text-align:right;wh
 .login form{width:min(380px,100%);display:grid;gap:8px}.login p{margin:4px 0 8px}
 input{font:16px "IBM Plex Sans";min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:#0b1011;color:var(--ink)}input:focus{outline:2px solid var(--gold)}
 .bot{cursor:pointer;outline:none}
-.bot{--st:var(--teal)}.bot.pos{--st:var(--ok)}.bot.warn{--st:var(--warn)}.bot.err{--st:var(--crit)}
+.bot{--st:var(--teal)}.bot.pos{--st:var(--ok)}.bot.warn{--st:var(--warn)}
 .bot .ring{opacity:0;transition:opacity .2s}.bot.sel .ring,.bot:focus-visible .ring{opacity:1}
-.bot .b{animation:bob 2.6s ease-in-out infinite}.bot.warn .b{animation:none}
+.bot .hl{animation:type .28s ease-in-out infinite alternate}.bot .hr{animation:type .28s ease-in-out .14s infinite alternate}
+.bot .head{animation:look 7s ease-in-out infinite;transform-origin:1px -45px;transform-box:view-box}
+.bot.warn .hl,.bot.warn .hr{animation:none}.bot.warn .head{animation:none;transform:rotate(-8deg)}
 .bot.pos .lamp{animation:pulse 1.6s infinite}
-@keyframes bob{50%{transform:translateY(-3px)}}@keyframes pulse{50%{opacity:.35}}
-@media(prefers-reduced-motion:reduce){.bot .b,.bot .lamp,.live i{animation:none!important}}
+@keyframes type{to{transform:translateY(-1.6px)}}@keyframes look{0%,40%,100%{transform:none}48%,60%{transform:rotate(-7deg)}}@keyframes pulse{50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.bot *,.live i{animation:none!important}}
 @media(max-width:1000px){main{grid-template-columns:minmax(0,1fr)}.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:600px){.note{position:static;padding:0 14px 12px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fig{height:250px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
 table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:8px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;color:var(--mute)}.stack td:empty{display:none}}
@@ -95,17 +97,18 @@ table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-bl
 <main>
   <div class="col">
     <div class="scene">
-      <svg id="svg" viewBox="-270 -135 640 490" role="img" aria-label="Escritório isométrico com um robô operador por mercado">
+      <svg id="svg" viewBox="-280 -150 650 505" role="img" aria-label="Escritório isométrico com um operador por mercado">
         <defs id="defs">
           <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
           <radialGradient id="poolG"><stop offset="0" stop-color="#e9b949" stop-opacity=".2"/><stop offset="1" stop-color="#e9b949" stop-opacity="0"/></radialGradient>
           <radialGradient id="poolV"><stop offset="0" stop-color="#3ecf8e" stop-opacity=".28"/><stop offset="1" stop-color="#3ecf8e" stop-opacity="0"/></radialGradient>
           <linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0c1a2a"/><stop offset="1" stop-color="#2a3340"/></linearGradient>
+          <linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dff5f2" stop-opacity=".22"/><stop offset="1" stop-color="#dff5f2" stop-opacity="0"/></linearGradient>
           <linearGradient id="scr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a1213"/><stop offset="1" stop-color="#12201f"/></linearGradient>
         </defs>
         <g id="static"></g><g id="bots"></g>
       </svg>
-      <div class="note">Dados reais do Supabase do robô · clique num robô para ver o mercado</div>
+      <div class="note">Dados reais do Supabase do robô · clique num operador para ver o mercado</div>
     </div>
     <div class="card" id="fxCard">
       <div class="chead">
@@ -206,71 +209,99 @@ async function carregar(){
  }catch(e){if(e.message==='login')$('login').hidden=false;else{err='Não consegui ler o Supabase: '+e.message;renderAll()}}}
 
 /* ---------- sala ---------- */
-const SLOTS=[[1.2,2.9],[4.7,2.9],[1.2,5.1],[4.7,5.1]];
-const BODY={BTC:'#f2a93b',ETH:'#9fb1f0'};
+const SLOTS=[[1.3,3.1],[4.8,3.1],[1.3,5.2],[4.8,5.2]];
+const LOOK={BTC:{shirt:'#e39b2d',hair:'#2a1c14',skin:'#c98d63'},ETH:{shirt:'#6f86e0',hair:'#151515',skin:'#e0b08a'}};
+const LOOKX=[{shirt:'#3fae8a',hair:'#3b2416',skin:'#a8714f'},{shirt:'#c2577a',hair:'#1d1d1d',skin:'#f0c8a6'}];
+const onY=(x,y,z)=>{const [a,b]=P(x,y,z);return `matrix(${C},${H},0,${S},${a.toFixed(1)},${b.toFixed(1)})`};
+const onXr=(y,z)=>{const [a,b]=P(0,y,z);return `matrix(${C},${-H},0,${S},${a.toFixed(1)},${b.toFixed(1)})`};
+const WALLS=[{t:()=>onY(.5,0,2.25),w:5.8,h:1.65},{t:()=>onXr(6.5,2.2),w:5.1,h:1.6}];
 function buildRoom(){const key=ORDER.join(',');if(built===key)return;built=key;
  let st='';
  st+=quad([P(0,0),P(10,0),P(10,7),P(0,7)],'#2a241e');
  for(let i=1;i<20;i++)st+=`<polyline points="${pts([P(i*.5,0),P(i*.5,7)])}" stroke="#30291f" fill="none"/>`;
- st+=quad([P(.8,2.4),P(8,2.4),P(8,6.8),P(.8,6.8)],'#22302f');st+=quad([P(1,2.6),P(7.8,2.6),P(7.8,6.6),P(1,6.6)],'none','stroke="#2f4241" stroke-width="1.5"');
- const [a1,b1]=P(4.4,3.8);st+=`<ellipse cx="${a1}" cy="${b1}" rx="260" ry="110" fill="url(#poolG)"/>`;
+ st+=quad([P(.8,2.6),P(8,2.6),P(8,6.9),P(.8,6.9)],'#22302f');st+=quad([P(1,2.8),P(7.8,2.8),P(7.8,6.7),P(1,6.7)],'none','stroke="#2f4241" stroke-width="1.5"');
+ const [a1,b1]=P(4.4,4);st+=`<ellipse cx="${a1}" cy="${b1}" rx="260" ry="110" fill="url(#poolG)"/>`;
  st+=quad([P(0,0,0),P(10,0,0),P(10,0,2.5),P(0,0,2.5)],'#1c1a17')+quad([P(0,0,0),P(0,7,0),P(0,7,2.5),P(0,0,2.5)],'#171512');
  st+=quad([P(0,0,2.5),P(10,0,2.5),P(10,-.18,2.5),P(0,-.18,2.5)],'#3d3628')+quad([P(0,0,2.5),P(0,7,2.5),P(-.18,7,2.5),P(-.18,0,2.5)],'#332d22');
  st+=quad([P(0,0,0),P(10,0,0),P(10,0,.12),P(0,0,.12)],'#0e0d0b')+quad([P(0,0,0),P(0,7,0),P(0,7,.12),P(0,0,.12)],'#0b0a09');
- {let w=`<g transform="${onX0(1.6,2.15)}"><rect width="4.6" height="1.55" fill="url(#night)"/>`;let bx=.05;
-  for(const [bw,bh] of [[.35,.9],[.25,.55],[.4,1.1],[.3,.7],[.45,.95],[.3,.5],[.35,1.2],[.4,.8],[.3,.6],[.35,1],[.3,.75]]){if(bx+bw>4.6)break;w+=`<rect x="${bx}" y="${1.55-bh}" width="${bw}" height="${bh}" fill="#18222c"/>`;for(let k=0;k<4;k++)w+=`<rect x="${(bx+.06+((k*37)%10)/10*(bw-.14)).toFixed(2)}" y="${(1.55-bh+.12+k*.18).toFixed(2)}" width=".05" height=".05" fill="#f5d77a" opacity=".75"/>`;bx+=bw+.04}
-  st+=w+`<rect width="4.6" height="1.55" fill="none" stroke="#3d3628" stroke-width=".06"/><line x1="2.3" y1="0" x2="2.3" y2="1.55" stroke="#3d3628" stroke-width=".05"/></g>`}
- st+=`<g transform="${onY0(.7,2.2)}"><rect width="5.6" height="1.6" rx=".05" fill="url(#scr)" stroke="#e9b949" stroke-opacity=".6" stroke-width=".04"/>
-  <text id="wallT" x=".2" y=".3" font-size=".19" fill="#e9b949" font-family="Chakra Petch" font-weight="600"></text><text id="wallP" x="5.4" y=".3" font-size=".19" fill="#e8f0f1" text-anchor="end" font-family="Chakra Petch"></text>
-  <polygon id="wallBand" fill="#e9b949" opacity=".14"/><polyline id="wallMM" fill="none" stroke="#e9b949" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
-  <polyline id="wallL" fill="none" stroke="#dff5f2" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/><g id="wallM"></g></g>`;
- st+=`<g transform="${onY0(6.8,2.05)}"><rect width="2.7" height="1.35" rx=".05" fill="url(#scr)" stroke="#3d3628" stroke-width=".04"/>
-  <text x=".16" y=".3" font-size=".16" fill="#8ea2a7">Hoje</text><text id="bdDay" x=".16" y=".62" font-size=".3" font-weight="700" fill="#e8f0f1" font-family="Chakra Petch"></text>
-  <text x=".16" y=".9" font-size=".14" fill="#8ea2a7" id="bdLim"></text><text x=".16" y="1.16" font-size=".14" fill="#8ea2a7" id="bdOrd"></text></g>`;
+ // telões de mercado (parede do fundo e parede da esquerda)
+ WALLS.forEach((W,i)=>{st+=`<g transform="${W.t()}"><rect x="-.06" y="-.06" width="${W.w+.12}" height="${W.h+.12}" rx=".06" fill="#0a0908"/><rect width="${W.w}" height="${W.h}" rx=".04" fill="url(#scr)" id="wallB${i}" stroke="#3d3628" stroke-width=".035"/><g id="wall${i}"></g></g>`});
+ // quadro do dia
+ st+=`<g transform="${onY(6.75,0,2.2)}"><rect x="-.06" y="-.06" width="2.92" height="1.57" rx=".06" fill="#0a0908"/><rect width="2.8" height="1.45" rx=".04" fill="url(#scr)" stroke="#3d3628" stroke-width=".035"/><g id="board"></g></g>`;
  const deskC=['#6a5444','#4b3c31','#5a4739'],monC=['#20272a','#101517','#191f21'];
- ORDER.slice(0,4).forEach((k,n)=>{const [x,y]=SLOTS[n];const m=MK[k];m.home=[x+1.05,y+1.2];
-  st+=box(x,y,2.1,.65,.42,deskC);for(let j=0;j<3;j++){const mx=x+.12+j*.65;st+=box(mx,y+.08,.58,.06,.4,monC,.42)+quad([P(mx+.03,y+.14,.47),P(mx+.55,y+.14,.47),P(mx+.55,y+.14,.79),P(mx+.03,y+.14,.79)],'#2bb5a8',`class="scr-${k}" opacity=".85"`)}
-  st+=box(m.home[0]-.3,m.home[1]-.05,.6,.5,.22,['#3a3020','#2a2318','#31291c']);const [pa,pb]=P(m.home[0],m.home[1]);st+=`<ellipse class="pool-${k}" cx="${pa}" cy="${pb}" rx="70" ry="30" fill="url(#poolV)" opacity="0"/>`});
- st+=box(8.2,3.2,.7,2.2,.32,['#6b5a3a','#4d4029','#5c4d32'])+box(8.75,3.2,.2,2.2,.7,['#6b5a3a','#4d4029','#5c4d32'])+box(7,3.6,.8,1.2,.25,['#3a3125','#2a231b','#322a20']);
- st+=box(8.9,.4,.55,.45,.6,['#9aa4a7','#6b7477','#7f888b'])+box(9,.45,.15,.12,.1,['#e9b949','#a88430','#c49a38'],.6);
+ ORDER.slice(0,4).forEach((k,n)=>{const [x,y]=SLOTS[n];const m=MK[k];m.home=[x+1.05,y+1.15];
+  st+=box(x,y,2.1,.7,.42,deskC)+box(x+.55,y+.42,.9,.22,.02,['#1a1a1a','#111','#151515'],.42);
+  for(let j=0;j<3;j++){const mx=x+.12+j*.65;st+=box(mx+.24,y+.1,.1,.06,.06,monC,.42)+box(mx,y+.06,.58,.06,.42,monC,.48)+`<g transform="${onY(mx+.03,y+.12,.86)}"><rect width=".52" height=".34" fill="#081010" class="scr-${k}" stroke-width=".012"/><g id="mon-${k}-${j}"></g></g>`}
+  const [pa,pb]=P(m.home[0],m.home[1]);st+=`<ellipse class="pool-${k}" cx="${pa}" cy="${pb}" rx="80" ry="34" fill="url(#poolV)" opacity="0"/>`});
+ st+=box(8.2,3.4,.7,2.2,.32,['#6b5a3a','#4d4029','#5c4d32'])+box(8.75,3.4,.2,2.2,.7,['#6b5a3a','#4d4029','#5c4d32'])+box(7.1,3.8,.8,1.2,.25,['#3a3125','#2a231b','#322a20'])+box(7.3,4.1,.18,.18,.12,['#e8e2d6','#b9b2a5','#d0c9bc'],.25);
+ st+=box(9.0,.35,.5,.42,.62,['#9aa4a7','#6b7477','#7f888b'])+box(9.1,.4,.14,.12,.1,['#e9b949','#a88430','#c49a38'],.62);
  const plant=(x,y,s=1)=>{const [a,b]=P(x,y);return box(x-.18,y-.18,.36,.36,.28,['#8a6a4f','#6b513c','#7a5d45'])+`<ellipse cx="${a}" cy="${b-16*s}" rx="${14*s}" ry="${17*s}" fill="#2f7a4c"/><ellipse cx="${a-5*s}" cy="${b-23*s}" rx="${8*s}" ry="${9*s}" fill="#4ea06b"/><ellipse cx="${a+6*s}" cy="${b-14*s}" rx="${6*s}" ry="${7*s}" fill="#3d8c5a"/>`};
- st+=plant(.45,.45)+plant(6.4,.45,.8)+plant(9.5,6.5)+plant(.45,6.5);
+ st+=plant(.45,.45)+plant(6.45,.4,.75)+plant(9.5,6.5)+plant(.45,6.6);
  $('static').innerHTML=st;
- const defs=$('defs'),bg=$('bots');bg.innerHTML='';
- ORDER.slice(0,4).forEach(k=>{const m=MK[k],body=BODY[k]||'#cfd8dc';
-  if(!$('g-'+k)){const lg=document.createElementNS(NS,'linearGradient');lg.id='g-'+k;lg.setAttribute('x1','0');lg.setAttribute('x2','1');lg.setAttribute('y1','0');lg.setAttribute('y2','1');lg.innerHTML=`<stop offset="0" stop-color="${shade(body,1.12)}"/><stop offset=".55" stop-color="${body}"/><stop offset="1" stop-color="${shade(body,.6)}"/>`;defs.appendChild(lg)}
-  const g=document.createElementNS(NS,'g');g.setAttribute('class','bot');g.dataset.k=k;g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label','Robô '+m.par);
-  const f=`url(#g-${k})`,dk=shade(body,.5),name='Robô '+k,tw=Math.max(name.length*7+26,138);const [x,y]=P(m.home[0],m.home[1]);g.setAttribute('transform',`translate(${x.toFixed(1)},${y.toFixed(1)})`);
-  g.innerHTML=`<ellipse cx="0" cy="0" rx="15" ry="6" fill="rgba(0,0,0,.45)"/><ellipse class="ring" cx="0" cy="0" rx="22" ry="9" fill="none" stroke="#e9b949" stroke-width="2"/>
-  <ellipse cx="0" cy="-1" rx="9" ry="3.5" style="fill:var(--st)" opacity=".35" filter="url(#glow)"/>
-  <g class="b"><rect x="-7" y="-14" width="14" height="6" rx="3" fill="${dk}"/>
-  <rect x="-16" y="-31" width="5" height="13" rx="2.5" fill="${dk}" transform="rotate(10 -13 -31)"/><rect x="11" y="-31" width="5" height="13" rx="2.5" fill="${dk}" transform="rotate(-10 13 -31)"/>
-  <rect x="-11.5" y="-33" width="23" height="22" rx="8" fill="${f}"/><rect x="-9" y="-31" width="4" height="15" rx="2" fill="#fff" opacity=".22"/>
-  <rect x="-5" y="-27" width="10" height="7" rx="2.5" fill="#0a1011"/><rect x="-3" y="-24.6" width="6" height="2.2" rx="1.1" style="fill:var(--st)" filter="url(#glow)"/>
-  <rect x="-14" y="-57" width="28" height="23" rx="10" fill="${f}"/><rect x="-11" y="-55" width="8" height="5" rx="2.5" fill="#fff" opacity=".25"/>
-  <rect x="-11" y="-51" width="22" height="12" rx="6" fill="#0a1011"/><rect x="-7.5" y="-47.5" width="5" height="5" rx="2.5" style="fill:var(--st)" filter="url(#glow)"/><rect x="2.5" y="-47.5" width="5" height="5" rx="2.5" style="fill:var(--st)" filter="url(#glow)"/>
-  <rect x="-16.5" y="-50" width="3" height="8" rx="1.5" fill="${dk}"/><rect x="13.5" y="-50" width="3" height="8" rx="1.5" fill="${dk}"/>
-  <line x1="0" y1="-57" x2="0" y2="-64" stroke="#9aa5ad" stroke-width="2" stroke-linecap="round"/><circle class="lamp" cx="0" cy="-67" r="3.8" style="fill:var(--st)" filter="url(#glow)"/>
-  <g transform="translate(0,-88)"><rect x="${-tw/2}" y="-12" width="${tw}" height="34" rx="10" fill="rgba(12,11,9,.92)" style="stroke:var(--st)" stroke-opacity=".8"/><text x="0" y="2" fill="#e8f0f1" font-size="12" font-weight="600" text-anchor="middle">${esc(name)}</text><text class="st" x="0" y="16" fill="#8ea2a7" font-size="10.5" text-anchor="middle"></text></g></g>`;
+ const bg=$('bots');bg.innerHTML='';
+ ORDER.slice(0,4).forEach((k,n)=>{const m=MK[k],L=LOOK[k]||LOOKX[n%2];
+  const g=document.createElementNS(NS,'g');g.setAttribute('class','bot');g.dataset.k=k;g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label','Operador '+m.par);
+  const [x,y]=P(m.home[0],m.home[1]);g.setAttribute('transform',`translate(${x.toFixed(1)},${y.toFixed(1)})`);
+  const name='Operador '+k,tw=Math.max(name.length*7+26,140),dk=shade(L.shirt,.72);
+  g.innerHTML=`<ellipse cx="0" cy="0" rx="17" ry="6.5" fill="rgba(0,0,0,.45)"/><ellipse class="ring" cx="0" cy="0" rx="24" ry="9.5" fill="none" stroke="#e9b949" stroke-width="2"/>
+  <ellipse cx="0" cy="-1" rx="11" ry="4" style="fill:var(--st)" opacity=".4" filter="url(#glow)"/>
+  <ellipse cx="0" cy="-2" rx="10" ry="3.4" fill="#26292c"/><rect x="-1.6" y="-15" width="3.2" height="13" fill="#3a3e42"/><ellipse cx="0" cy="-16" rx="13" ry="5" fill="#2b2f33"/>
+  <g class="arms"><path d="M-8 -36 Q-4 -44 3 -47" stroke="${dk}" stroke-width="5.5" fill="none" stroke-linecap="round"/><path d="M8 -36 Q13 -41 17 -44" stroke="${dk}" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+   <circle class="hl" cx="4" cy="-48" r="2.8" fill="${L.skin}"/><circle class="hr" cx="18" cy="-45" r="2.8" fill="${L.skin}"/></g>
+  <g class="torso"><path d="M-11 -16 Q-13 -36 -7 -41 L7 -41 Q13 -36 11 -16 Z" fill="${L.shirt}"/><path d="M-7 -41 L7 -41 Q9 -38 9 -34 L-9 -34 Q-9 -38 -7 -41Z" fill="#fff" opacity=".12"/>
+   <rect x="-3" y="-45" width="6" height="5" fill="${L.skin}"/>
+   <g class="head"><circle cx="1" cy="-53" r="9" fill="${L.skin}"/><path d="M-8.3 -52 A9.3 9.3 0 0 1 9.6 -56 Q6 -50 6.5 -45 Q0 -43 -7 -46 Z" fill="${L.hair}"/><ellipse cx="7.6" cy="-51" rx="2.6" ry="4.6" fill="${L.skin}"/>
+    <path d="M-8 -53 Q0 -66 9 -55" stroke="#1d1f22" stroke-width="2" fill="none"/><ellipse cx="-8" cy="-52" rx="2.4" ry="3.4" fill="#1d1f22"/></g></g>
+  <rect x="-11.5" y="-31" width="23" height="15" rx="5" fill="#23272b"/><rect x="-11.5" y="-31" width="23" height="4" rx="2" fill="#2f3439"/>
+  <g transform="translate(0,-86)"><rect x="${-tw/2}" y="-12" width="${tw}" height="34" rx="10" fill="rgba(12,11,9,.92)" style="stroke:var(--st)" stroke-opacity=".85"/><circle cx="${-tw/2+12}" cy="-1" r="3.5" style="fill:var(--st)" class="lamp"/><text x="4" y="2" fill="#e8f0f1" font-size="12" font-weight="600" text-anchor="middle">${esc(name)}</text><text class="st" x="0" y="16" fill="#8ea2a7" font-size="10.5" text-anchor="middle"></text></g>`;
   bg.appendChild(g)})}
+
+function wallChart(el,m,W,Hh,isSel){
+ if(!m||m.d.length<2){el.innerHTML=`<text x="${W/2}" y="${Hh/2}" font-size=".16" fill="#7d8c8f" text-anchor="middle">${m?'sem gráfico gravado':''}</text>`;return}
+ const w=m.d.slice(-90),o0=m.d.length-w.length,pl=.14,pr=.78,pt=.42,pb=.2,iw=W-pl-pr,ih=Hh-pt-pb;
+ let lo=Infinity,hi=-Infinity;w.forEach((x,i)=>{lo=Math.min(lo,x.c);hi=Math.max(hi,x.c);const v=mmAt(m,i+o0);if(v!=null){lo=Math.min(lo,v*(1-m.band));hi=Math.max(hi,v*(1+m.band))}});
+ if(m.price){lo=Math.min(lo,m.price);hi=Math.max(hi,m.price)}const pd=(hi-lo)*.06||1;lo-=pd;hi+=pd;
+ const X=i=>pl+iw*i/(w.length-1),Y=v=>pt+(hi-v)/(hi-lo)*ih,f=v=>v>=1e4?(v/1e3).toFixed(0)+' mil':v.toFixed(0),r3=v=>v.toFixed(3);
+ const first=w[0].c,ch=(m.price||w[w.length-1].c)/first-1;let o='';
+ o+=`<text x="${pl}" y=".24" font-size=".17" font-weight="700" fill="#e9b949" font-family="Chakra Petch">${esc(m.par)}</text><text x="${pl+.95}" y=".24" font-size=".13" fill="#7d8c8f">90 dias · <tspan fill="${ch>=0?'#3ecf8e':'#ef5350'}">${pct(ch)}</tspan></text>`;
+ o+=`<text x="${W-.12}" y=".24" font-size=".17" font-weight="700" fill="#e8f0f1" text-anchor="end" font-family="Chakra Petch">${esc(brl(m.price,0))}</text>`;
+ for(let g=0;g<=3;g++){const v=lo+(hi-lo)*g/3,y=Y(v);o+=`<line x1="${pl}" x2="${pl+iw}" y1="${r3(y)}" y2="${r3(y)}" stroke="#ffffff" stroke-opacity=".07" stroke-width="1" vector-effect="non-scaling-stroke"/><text x="${pl+iw+.06}" y="${r3(y+.04)}" font-size=".1" fill="#7d8c8f">${f(v)}</text>`}
+ w.forEach((x,i)=>{if(i&&x.t.getMonth()!==w[i-1].t.getMonth())o+=`<text x="${r3(X(i))}" y="${r3(Hh-.05)}" font-size=".1" fill="#7d8c8f">${x.t.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</text>`});
+ const wi=new Map(w.map((x,i)=>[x.k,i]));let open=null;
+ [...m.trades].reverse().forEach(t=>{const i=wi.has(t.k)?wi.get(t.k):(t.t<w[0].t?0:null);if(t.side==='C')open=i;else{const j=i??w.length-1;if(open!=null)o+=`<rect x="${r3(X(open))}" y="${pt}" width="${r3(Math.max(0,X(j)-X(open)))}" height="${r3(ih)}" fill="#3ecf8e" opacity=".09"/>`;open=null}});
+ if(m.qty&&open!=null)o+=`<rect x="${r3(X(open))}" y="${pt}" width="${r3(X(w.length-1)-X(open))}" height="${r3(ih)}" fill="#3ecf8e" opacity=".09"/>`;
+ const up=[],dn=[],ml=[];w.forEach((x,i)=>{const v=mmAt(m,i+o0);if(v!=null){up.push(r3(X(i))+','+r3(Y(v*(1+m.band))));dn.unshift(r3(X(i))+','+r3(Y(v*(1-m.band))));ml.push(r3(X(i))+','+r3(Y(v)))}});
+ if(ml.length)o+=(m.band?`<polygon points="${up.concat(dn).join(' ')}" fill="#e9b949" opacity=".14"/>`:'')+`<polyline points="${ml.join(' ')}" fill="none" stroke="#e9b949" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`;
+ const line=w.map((x,i)=>r3(X(i))+','+r3(Y(x.c)));
+ o+=`<polygon points="${r3(X(0))},${r3(pt+ih)} ${line.join(' ')} ${r3(X(w.length-1))},${r3(pt+ih)}" fill="url(#area)"/><polyline points="${line.join(' ')}" fill="none" stroke="#dff5f2" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+ m.trades.forEach(t=>{const i=wi.get(t.k);if(i==null)return;const x=X(i),y=Y(w[i].c);o+=t.side==='C'?`<path d="M${r3(x)} ${r3(y+.05)}l.06 .1h-.12z" fill="#3ecf8e"/>`:`<path d="M${r3(x)} ${r3(y-.05)}l.06 -.1h-.12z" fill="#ef5350"/>`});
+ const L=m.d.length,mmL=mmAt(m,L-1);if(!m.qty&&mmL&&m.band){const y=Y(mmL*(1+m.band));o+=`<line x1="${pl}" x2="${pl+iw}" y1="${r3(y)}" y2="${r3(y)}" stroke="#e9b949" stroke-dasharray="4 4" stroke-opacity=".7" vector-effect="non-scaling-stroke"/><text x="${r3(pl+iw-.04)}" y="${r3(y-.04)}" font-size=".1" fill="#e9b949" text-anchor="end">compra acima de ${f(mmL*(1+m.band))}</text>`}
+ if(m.qty&&m.stop&&m.stop>lo){const y=Y(m.stop);o+=`<line x1="${pl}" x2="${pl+iw}" y1="${r3(y)}" y2="${r3(y)}" stroke="#ef5350" stroke-dasharray="4 4" stroke-opacity=".8" vector-effect="non-scaling-stroke"/><text x="${pl+.04}" y="${r3(y-.04)}" font-size=".1" fill="#ef5350">stop</text>`}
+ if(m.price){const y=Y(m.price);o+=`<circle cx="${r3(X(w.length-1))}" cy="${r3(y)}" r=".04" fill="#dff5f2"/><rect x="${r3(pl+iw+.03)}" y="${r3(y-.08)}" width=".7" height=".16" rx=".03" fill="#dff5f2"/><text x="${r3(pl+iw+.38)}" y="${r3(y+.04)}" font-size=".1" font-weight="700" fill="#081012" text-anchor="middle">${f(m.price)}</text>`}
+ el.innerHTML=o}
+
+function monitors(k){const m=MK[k];if(!m)return;const w=m.d.slice(-30).map(x=>x.c);if(m.price)w.push(m.price);
+ const g0=$(`mon-${k}-0`),g1=$(`mon-${k}-1`),g2=$(`mon-${k}-2`);if(!g0||w.length<2)return;
+ const lo=Math.min(...w),hi=Math.max(...w),up=w[w.length-1]>=w[0];
+ g0.innerHTML=`<polyline points="${w.map((v,i)=>(.03+i*.46/(w.length-1)).toFixed(3)+','+(.3-(v-lo)/((hi-lo)||1)*.24).toFixed(3)).join(' ')}" fill="none" stroke="${up?'#3ecf8e':'#ef5350'}" stroke-width="1.2" vector-effect="non-scaling-stroke"/>`;
+ const rets=m.d.slice(-15).map((x,i,a)=>i?x.c/a[i-1].c-1:0).slice(1),mx=Math.max(...rets.map(Math.abs))||1;
+ g1.innerHTML=`<line x1=".03" x2=".49" y1=".17" y2=".17" stroke="#fff" stroke-opacity=".15" vector-effect="non-scaling-stroke"/>`+rets.map((r,i)=>{const h=Math.abs(r)/mx*.13;return `<rect x="${(.04+i*.032).toFixed(3)}" y="${(r>=0?.17-h:.17).toFixed(3)}" width=".022" height="${h.toFixed(3)}" fill="${r>=0?'#3ecf8e':'#ef5350'}"/>`}).join('');
+ const c=m.qty?'#3ecf8e':'#2bb5a8';g2.innerHTML=`<rect x=".04" y=".04" width=".2" height=".06" rx=".02" fill="${c}"/>`+[.15,.2,.25].map((y,i)=>`<rect x=".04" y="${y}" width="${[.4,.3,.36][i]}" height=".025" fill="#fff" opacity=".25"/>`).join('')+(m.qty?`<rect x=".3" y=".04" width=".18" height=".06" rx=".02" fill="${m.aberto>=0?'#3ecf8e':'#ef5350'}" opacity=".8"/>`:'')}
 
 function renderRoom(){buildRoom();const fxOn=!CTRL.pausado;
  ORDER.slice(0,4).forEach(k=>{const m=MK[k],g=document.querySelector(`.bot[data-k="${k}"]`);if(!g)return;
   const cls=stale(m)?'warn':!fxOn?'warn':m.qty?'pos':'';g.setAttribute('class',`bot ${cls}${k===mk?' sel':''}`);
-  g.querySelector('.st').textContent=stale(m)?'sem atualizar':!fxOn?'pausado':m.qty?`comprado ${money(m.aberto)}`:'no caixa';
-  document.querySelectorAll('.scr-'+k).forEach(e=>e.setAttribute('fill',m.qty?'#3ecf8e':stale(m)||!fxOn?'#f2b33d':'#2bb5a8'));
-  document.querySelectorAll('.pool-'+k).forEach(e=>e.setAttribute('opacity',m.qty?1:0))});
- const m=mk&&MK[mk];
- if(m&&m.d.length>1){const w=m.d.slice(-90),o0=m.d.length-w.length;let lo=Infinity,hi=-Infinity;
-  w.forEach((x,i)=>{lo=Math.min(lo,x.c);hi=Math.max(hi,x.c);const v=mmAt(m,i+o0);if(v!=null){lo=Math.min(lo,v*(1-m.band));hi=Math.max(hi,v*(1+m.band))}});
-  const sx=i=>.2+i*(5.2/(w.length-1)),sy=v=>1.48-(v-lo)/((hi-lo)||1)*1.05,wi=new Map(w.map((x,i)=>[x.k,i]));const up=[],dn=[],ml=[];
-  w.forEach((x,i)=>{const v=mmAt(m,i+o0);if(v!=null){up.push(sx(i).toFixed(3)+','+sy(v*(1+m.band)).toFixed(3));dn.unshift(sx(i).toFixed(3)+','+sy(v*(1-m.band)).toFixed(3));ml.push(sx(i).toFixed(3)+','+sy(v).toFixed(3))}});
-  $('wallL').setAttribute('points',w.map((x,i)=>sx(i).toFixed(3)+','+sy(x.c).toFixed(3)).join(' '));$('wallMM').setAttribute('points',ml.join(' '));$('wallBand').setAttribute('points',up.concat(dn).join(' '));
-  $('wallM').innerHTML=m.trades.map(t=>{const i=wi.get(t.k);return i==null?'':`<circle cx="${sx(i).toFixed(3)}" cy="${sy(w[i].c).toFixed(3)}" r=".07" fill="${t.side==='C'?'#3ecf8e':'#ef5350'}"/>`}).join('');
-  $('wallT').textContent=`${m.par} · Foxbit · últimos ${w.length} dias`;$('wallP').textContent=brl(m.price,0)}
- if(ORDER.length){const day=ORDER.reduce((a,k)=>a+MK[k].pnlDia,0),r=MK[ORDER[0]].risco||{},ord=ORDER.reduce((a,k)=>a+MK[k].tradesDia,0);
-  $('bdDay').textContent=money(day);$('bdDay').setAttribute('fill',day>0?'#3ecf8e':day<0?'#ef5350':'#e8f0f1');
-  $('bdLim').textContent=`meta ${brl(r.meta_dia_reais)} · limite −${brl(r.perda_dia_reais)}`;$('bdOrd').textContent=`${ord} de ${Number(r.max_trades_dia)||0} ordens`}}
+  g.querySelector('.st').textContent=stale(m)?'sem atualizar':!fxOn?'pausado':m.qty?`comprado ${money(m.aberto)}`:'no caixa · vigiando';
+  document.querySelectorAll('.scr-'+k).forEach(e=>e.setAttribute('stroke',m.qty?'#3ecf8e':stale(m)||!fxOn?'#f2b33d':'#2bb5a8'));
+  document.querySelectorAll('.pool-'+k).forEach(e=>e.setAttribute('opacity',m.qty?1:0));monitors(k)});
+ WALLS.forEach((W,i)=>{const k=ORDER[i],el=$('wall'+i);if(!el)return;wallChart(el,k?MK[k]:null,W.w,W.h,k===mk);$('wallB'+i).setAttribute('stroke',k&&k===mk?'#e9b949':'#3d3628')});
+ const bd=$('board');if(bd&&ORDER.length){const day=ORDER.reduce((a,k)=>a+MK[k].pnlDia,0),r=MK[ORDER[0]].risco||{},ord=ORDER.reduce((a,k)=>a+MK[k].tradesDia,0),mxo=Number(r.max_trades_dia)||3;
+  const lim=Number(r.perda_dia_reais)||2,meta=Number(r.meta_dia_reais)||5,x0=.16,x1=2.64,z=x0+(x1-x0)*lim/(lim+meta),cur=Math.max(-lim,Math.min(meta,day)),xc=x0+(x1-x0)*(cur+lim)/(lim+meta);
+  bd.innerHTML=`<text x=".16" y=".28" font-size=".14" fill="#7d8c8f">Resultado de hoje</text><text x="2.64" y=".28" font-size=".13" fill="${CTRL.pausado?'#f2b33d':'#3ecf8e'}" text-anchor="end">${CTRL.pausado?'pausado':'operando'}</text>
+  <text x=".16" y=".66" font-size=".34" font-weight="700" fill="${day>0?'#3ecf8e':day<0?'#ef5350':'#e8f0f1'}" font-family="Chakra Petch">${esc(money(day))}</text>
+  <rect x="${x0}" y=".8" width="${x1-x0}" height=".09" rx=".045" fill="#ffffff" opacity=".08"/><rect x="${Math.min(z,xc).toFixed(3)}" y=".8" width="${Math.abs(xc-z).toFixed(3)}" height=".09" fill="${day>=0?'#3ecf8e':'#ef5350'}"/><line x1="${z.toFixed(3)}" x2="${z.toFixed(3)}" y1=".75" y2=".94" stroke="#e8f0f1" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <text x="${x0}" y="1.05" font-size=".1" fill="#ef5350">−${esc(brl(lim))}</text><text x="${x1}" y="1.05" font-size=".1" fill="#3ecf8e" text-anchor="end">+${esc(brl(meta))}</text>
+  <text x=".16" y="1.3" font-size=".12" fill="#7d8c8f">Ordens</text>${Array.from({length:mxo},(_,i)=>`<circle cx="${(.75+i*.18).toFixed(2)}" cy="1.26" r=".06" fill="${i<ord?'#e9b949':'none'}" stroke="#e9b949" stroke-width="1" vector-effect="non-scaling-stroke"/>`).join('')}`}}
 
 /* ---------- gráfico ---------- */
 function drawChart(){const s=$('chart'),W=s.clientWidth,Hh=s.clientHeight;if(!W)return;const m=mk&&MK[mk];
@@ -307,7 +338,7 @@ function renderFx(){document.querySelectorAll('.tab').forEach(b=>{const on=b.dat
  const m=mk&&MK[mk];
  if(!m){$('fxTitle').textContent='Gráfico';$('fxSub').textContent=err||'Entre com o login do painel para ver os dados reais.';$('fxPrice').textContent='–';$('fxChg').textContent='';$('fxStats').innerHTML='';$('fxTrades').innerHTML='';drawChart();return}
  const L=m.d.length,last=L?m.d[L-1].c:m.price,ch=last?m.price/last-1:0,mm=L?mmAt(m,L-1):null,res=m.realizado+m.aberto;
- $('fxTitle').textContent=`Robô ${m.key} · ${m.par}`;
+ $('fxTitle').textContent=`Operador ${m.key} · ${m.par}`;
  $('fxSub').textContent=`${m.linha} com faixa de ${(m.band*100).toFixed(0)}% · velas ${m.tf==='1d'?'diárias':m.tf} · teto ${brl(m.cap)} · modo ${m.modo}`;
  $('lgMM').textContent=m.linha;
  $('fxPrice').textContent=brl(m.price,0);$('fxChg').innerHTML=`<span class="${ch>=0?'up':'down'}">${pct(ch)}</span> desde o último fechamento`;
@@ -323,7 +354,7 @@ function renderPanel(){const m=mk&&MK[mk];
  if(!m){$('panel').innerHTML=`<h2>Robô Foxbit</h2><div class="diag">${esc(err||'Entre com o login do painel do robô para ver os dados reais.')}</div><div class="acts"><button id="bLogin" class="pri">Entrar</button></div>`;return}
  const L=m.d.length,mm=L?mmAt(m,L-1):null,confirmando=Date.now()-conf<4000,fxOn=!CTRL.pausado;
  const chip=stale(m)?['Sem atualizar há mais de 45 min','warn']:!fxOn?['Pausado','warn']:m.qty?['Comprado','ok']:['No caixa · esperando sinal','teal'];
- $('panel').innerHTML=`<h2>Robô ${esc(m.key)}</h2><div class="sub">${esc(m.par)} · Foxbit · atualizou ${ago(m.upd)}</div>
+ $('panel').innerHTML=`<h2>Operador ${esc(m.key)}</h2><div class="sub">${esc(m.par)} · Foxbit · atualizou ${ago(m.upd)}</div>
  <span class="chip ${chip[1]}">${chip[0]}</span>
  <div class="kv"><div><span>Preço agora</span><b>${brl(m.price,0)}</b></div><div><span>${esc(m.linha)}</span><b>${mm?brl(mm,0):'–'}</b></div>
  <div><span>${m.qty?'Vende abaixo de':'Compra acima de'}</span><b>${mm?brl(mm*(m.qty?1-m.band:1+m.band),0):'–'}</b></div><div><span>${m.qty?'Stop':'Teto deste robô'}</span><b>${m.qty&&m.stop?brl(m.stop,0):brl(m.cap)}</b></div></div>
