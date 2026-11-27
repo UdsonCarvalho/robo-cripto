@@ -83,7 +83,7 @@ input{font:16px "IBM Plex Sans";min-height:44px;padding:0 12px;border-radius:10p
 .bot .mug,.bot .plate{display:none}.bot[data-item=mug] .mug,.bot[data-item=plate] .plate{display:inline}.bot[data-pose=walk] .mug,.bot[data-pose=walk] .plate{display:none}
 .bot[data-pose=walk] .lg1{animation:step .35s infinite alternate}.bot[data-pose=walk] .lg2{animation:step .35s .175s infinite alternate}@keyframes step{to{transform:translateY(-3px)}}
 .bot .steam{animation:steam 2s infinite}@keyframes steam{50%{opacity:.2;transform:translateY(-2px)}}
-.bot.lab{--st:#b58cf0}
+.bot.lab{--st:#b58cf0}.bot.council{--st:#e9b949}
 .bot.idle .hl,.bot.idle .hr{animation-duration:1.4s}
 .bot .hl{animation:type .28s ease-in-out infinite alternate}.bot .hr{animation:type .28s ease-in-out .14s infinite alternate}
 .bot .head{animation:look 7s ease-in-out infinite;transform-origin:1px -45px;transform-box:view-box}
@@ -105,7 +105,7 @@ table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-bl
 <main>
   <div class="col">
     <div class="scene">
-      <svg id="svg" viewBox="-318 -160 715 575" role="img" aria-label="Escritório isométrico com um operador por mercado">
+      <svg id="svg" viewBox="-318 -168 860 650" role="img" aria-label="Escritório isométrico com um operador por mercado">
         <defs id="defs">
           <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
           <radialGradient id="poolG"><stop offset="0" stop-color="#e9b949" stop-opacity=".2"/><stop offset="1" stop-color="#e9b949" stop-opacity="0"/></radialGradient>
@@ -227,7 +227,10 @@ async function carregar(){
 /* ---------- sala ---------- */
 const onY=(x,y,z)=>{const [a,b]=P(x,y,z);return `matrix(${C},${H},0,${S},${a.toFixed(1)},${b.toFixed(1)})`};
 const onXr=(y,z)=>{const [a,b]=P(0,y,z);return `matrix(${C},${-H},0,${S},${a.toFixed(1)},${b.toFixed(1)})`};
-const RX=11,RY=8.5;
+const RX=15,RY=8.5;
+// sala do conselho (x 11–15): três conselheiros e a cadeira de aprovação do Silva
+const CONS_SEATS={Rita:[12.35,4.55],Edu:[13.2,4.55],Duda:[14.05,4.55]},CONS_LUNCH={Rita:[14.2,7.3],Edu:[14.6,6.6],Duda:[13.7,7.6]},SILVA_SEAT=[14.75,3.3];
+const COUNCIL=[{nome:'Rita',papel:'risco',look:{shirt:'#c0504d',hair:'#3b2416',skin:'#e8b892'}},{nome:'Edu',papel:'estatística',look:{shirt:'#3e5a8a',hair:'#1a1a1a',skin:'#a06a48'}},{nome:'Duda',papel:'advogado do diabo',look:{shirt:'#c9a23a',hair:'#5b3a1e',skin:'#f0caa6'}}];
 const LOOK={BTC:{shirt:'#e39b2d',hair:'#2a1c14',skin:'#c98d63'},ETH:{shirt:'#6f86e0',hair:'#151515',skin:'#e0b08a'}};
 const LOOKX=[{shirt:'#3fae8a',hair:'#3b2416',skin:'#a8714f'},{shirt:'#c2577a',hair:'#1d1d1d',skin:'#f0c8a6'}];
 const SLOTS=[[1.5,3.1],[5.3,3.1],[1.5,5.7],[5.3,5.7]];
@@ -312,6 +315,27 @@ function buildRoom(){const key=ORDER.join(',');if(built===key)return;built=key;
   const [cx,cy]=P(m.home[0],m.home[1]);chairs+=`<g transform="translate(${cx.toFixed(1)},${cy.toFixed(1)})"><ellipse cx="0" cy="-2" rx="10" ry="3.4" fill="#26292c"/><rect x="-1.6" y="-15" width="3.2" height="13" fill="#3a3e42"/><ellipse cx="0" cy="-16" rx="13" ry="5" fill="#2b2f33"/><rect x="-11.5" y="-31" width="23" height="15" rx="5" fill="#23272b"/><rect x="-11.5" y="-31" width="23" height="4" rx="2" fill="#2f3439"/></g>`;
   const g=pessoa(k,'Operador '+k,L,'Operador '+m.par);
   m.at=null;bg.appendChild(g)});
+ // sala do conselho
+ {let c='';const glassW=(x1,y1,x2,y2,h=1.9)=>quad([P(x1,y1),P(x2,y2),P(x2,y2,h),P(x1,y1,h)],'rgba(170,230,235,.07)','stroke="rgba(190,235,240,.35)" stroke-width="1"')+`<polyline points="${pts([P(x1,y1,h),P(x2,y2,h)])}" stroke="rgba(210,245,245,.6)" stroke-width="1.5" fill="none"/>`;
+  c+=quad([P(11.1,0),P(15,0),P(15,8.5),P(11.1,8.5)],'#2b2733')+quad([P(11.3,.4),P(14.8,.4),P(14.8,8.2),P(11.3,8.2)],'none','stroke="#3b3546" stroke-width="1.2"');
+  const [ga,gb]=P(13.2,3.6);c+=`<ellipse cx="${ga}" cy="${gb}" rx="150" ry="70" fill="url(#poolG)"/>`;
+  c+=`<g transform="${onY(11.45,0,2.3)}"><rect x="-.06" y="-.06" width="3.42" height="1.57" rx=".05" fill="#0a0908"/><rect width="3.3" height="1.45" rx=".03" fill="url(#scr)" stroke="#e9b949" stroke-opacity=".5" stroke-width=".03"/><g id="consWall"></g></g>`;
+  const leg=['#2b2b2b','#1c1c1c','#242424'];
+  c+=quad([P(11.9,2.5),P(14.5,2.5),P(14.5,4.1),P(11.9,4.1)],'#000','opacity=".45" filter="url(#shadow)"');
+  [[12.0,2.6],[14.3,2.6],[12.0,3.85],[14.3,3.85]].forEach(([x,y])=>c+=box(x,y,.08,.08,.42,leg));
+  c+=box(11.9,2.5,2.6,1.5,.06,['#5a4130','#3e2e22','#4b372a'],.42)+quad([P(12.05,2.65,.48),P(14.35,2.65,.48),P(14.35,3.85,.48),P(12.05,3.85,.48)],'none','stroke="#7a5b43" stroke-width="1"');
+  [[12.45,3.6],[13.3,3.6],[14.1,3.6]].forEach(([x,y],i)=>c+=box(x,y,.32,.22,.01,['#e8e2d6','#bdb6aa','#d2cbbe'],.48)+box(x+.4,y+.02,.1,.1,.11,['#f2efe9','#c9c3b8','#ddd7cc'],.48));
+  c+=box(12.9,2.9,.6,.4,.02,['#1d2023','#121416','#181b1d'],.48)+box(12.95,2.95,.5,.02,.28,['#2bb5a8','#1a6e66','#228f86'],.5);
+  const chair=(x,y,col='#2b2f33')=>{const [a,b]=P(x,y);return `<g transform="translate(${a.toFixed(1)},${b.toFixed(1)})"><ellipse cx="0" cy="-2" rx="10" ry="3.4" fill="#26292c"/><rect x="-1.6" y="-15" width="3.2" height="13" fill="#3a3e42"/><ellipse cx="0" cy="-16" rx="13" ry="5" fill="${col}"/><rect x="-11.5" y="-31" width="23" height="15" rx="5" fill="${col}"/></g>`};
+  Object.values(CONS_SEATS).forEach(([x,y])=>c+=chair(x,y));
+  {const [a,b]=P(SILVA_SEAT[0],SILVA_SEAT[1]);c+=`<ellipse id="silvaGlow" cx="${a}" cy="${b}" rx="26" ry="11" fill="#f2b33d" opacity="0" filter="url(#glow)"/>`+chair(SILVA_SEAT[0],SILVA_SEAT[1],'#5a4a2a')+`<g id="silvaTag" transform="translate(${a.toFixed(1)},${(b-46).toFixed(1)})" style="cursor:pointer"><rect x="-58" y="-11" width="116" height="20" rx="10" fill="rgba(12,11,9,.92)" stroke="#e9b949" stroke-opacity=".8"/><text x="0" y="3" fill="#e9b949" font-size="11" font-weight="600" text-anchor="middle">Silva · aprovação</text></g>`}
+  c+=box(14.3,7.6,.6,.45,.85,['#4a3a2c','#3a2d22','#433426'])+box(14.4,7.65,.18,.14,.12,['#f2efe9','#c9c3b8','#ddd7cc'],.85)+box(14.65,7.65,.16,.16,.28,['#2a2d30','#1a1c1e','#222528'],.85);
+  {const [a,b]=P(14.6,.6);c+=box(14.42,.42,.36,.36,.3,['#8a6a4f','#6b513c','#7a5d45'])+`<ellipse cx="${a}" cy="${b-17}" rx="15" ry="18" fill="#2f7a4c"/><ellipse cx="${a-6}" cy="${b-25}" rx="8" ry="9" fill="#4ea06b"/>`}
+  c+=glassW(11.05,0,11.05,4.3)+glassW(11.05,5.4,11.05,8.5);
+  const [la,lb]=P(13.1,6.2);c+=`<text x="${la}" y="${lb}" fill="#8d7a52" font-size="11" text-anchor="middle" letter-spacing=".1em">SALA DO CONSELHO</text>`;
+  $('static').insertAdjacentHTML('beforeend',c);
+  COUNCIL.forEach(m=>{const g=pessoa('CONS-'+m.nome,m.nome,m.look,`Conselheira(o) ${m.nome}`);g.classList.add('council');g.dataset.cons=m.nome;
+   const r=g.querySelector('.tag rect'),tw=m.nome.length*7+34;r.setAttribute('height','22');r.setAttribute('width',tw);r.setAttribute('x',-tw/2);g.querySelector('.tag circle').setAttribute('cx',-tw/2+11);g.querySelector('.tag text').setAttribute('x','5');g.querySelector('.st').style.display='none';g.appendChild(document.createElementNS(NS,'title'));m.at=null;bg.appendChild(g)})}
  // laboratório: mesa dos testadores (3 turnos de 8 h)
  {const [x,y]=LABDESK,w=2.3,d=.78;let st2=quad([P(x-.08,y-.02),P(x+w+.12,y-.02),P(x+w+.12,y+d+.14),P(x-.08,y+d+.14)],'#000','opacity=".5" filter="url(#shadow)"');
   const leg=['#2b2b2b','#1c1c1c','#242424'],monC=['#22282b','#121618','#1a1f22'];
@@ -369,6 +393,21 @@ function moveOps(){ORDER.slice(0,4).forEach((k,n)=>{const m=MK[k],g=document.que
   g.dataset.item=a.item||'';g.classList.toggle('idle',!a.type);
   g.querySelector('.st').textContent=a.txt;g.querySelector('.tag').setAttribute('transform',`translate(${a.spot!=='mesa'?(n%2?70:-70):0},-90)${flip}`)});
  }
+function moveCouncil(){const t0=agoraBR(),h=Math.floor(t0/60),mn=t0%60,cs=CONS?(CONS.candidatas||[]):[],pend=cs.filter(c=>c.etapa==='aguardando').length,ativos=cs.filter(c=>c.etapa==='conselho'||c.etapa==='simulacao').length;
+ COUNCIL.forEach(m=>{const g=document.querySelector(`.bot[data-cons="${m.nome}"]`);if(!g)return;const on=h>=9&&h<18;g.style.display=on?'':'none';if(!on){m.at=null;return}
+  const almoco=t0>=750&&t0<810,spot=almoco?'lunch':'seat',xy=almoco?CONS_LUNCH[m.nome]:CONS_SEATS[m.nome],[x,y]=P(xy[0],xy[1]),pose=almoco?'stand':'sit';m.xy=xy;
+  if(m.at!==spot){const first=m.at===null;m.at=spot;g.style.transition=first?'none':'';g.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;if(!first){g.dataset.pose='walk';clearTimeout(m.tw);m.tw=setTimeout(()=>{g.dataset.pose=pose},3100)}else g.dataset.pose=pose}
+  g.dataset.item=almoco?'plate':'';const reun=!almoco&&mn>=50;g.setAttribute('class','bot council'+(reun||pend?' pos':''));g.classList.toggle('idle',!reun&&!ativos);
+  const ult=cs.find(c=>c.pareceres&&c.pareceres[m.nome]),voto=ult?ult.pareceres[m.nome]:null;
+  g.querySelector('title').textContent=`${m.nome} (${m.papel}): `+(almoco?'almoço (12h30–13h30)':reun?'reunião do conselho':ativos?`analisando ${ativos} candidata${ativos>1?'s':''}`:'acompanhando o laboratório')+(voto?` · último voto: ${voto.voto?'SIM':'NÃO'}`:'');
+  g.querySelector('.tag').setAttribute('transform',`translate(0,-${almoco?80:82})`)});
+ const glow=$('silvaGlow');if(glow)glow.setAttribute('opacity',pend?'.85':'0');
+ const w=$('consWall');if(!w)return;let o=`<text x=".14" y=".24" font-size=".15" font-weight="700" fill="#e9b949" font-family="Chakra Petch">Conselho · Agência COINS</text><text x="3.16" y=".24" font-size=".11" fill="${pend?'#f2b33d':'#8ea2a7'}" text-anchor="end">${pend?pend+' para o Silva':h>=9&&h<18?(mn>=50?'em reunião':'expediente'):'reunião automática'}</text>`;
+ const vis=cs.filter(c=>['aguardando','conselho','simulacao','aprovada'].includes(c.etapa)).slice(0,4);
+ o+=vis.length?vis.map((c,i)=>{const y=.5+i*.22,nm=(c.par.split('/')[0]+' '+c.nome).slice(0,34),et={aguardando:'aguardando você',conselho:'em votação',simulacao:`simulação ${c.dias_simulacao||0}/14`,aprovada:'no robô'}[c.etapa];
+  return `<text x=".14" y="${y.toFixed(2)}" font-size=".1" fill="#e8f0f1">${esc(nm)}</text><text x="2.25" y="${y.toFixed(2)}" font-size=".09" fill="#8ea2a7">${esc(et)}</text>`+['Rita','Edu','Duda'].map((n,j)=>{const p=c.pareceres&&c.pareceres[n];return `<circle cx="${(2.95+j*.1).toFixed(2)}" cy="${(y-.03).toFixed(2)}" r=".035" fill="${p?(p.voto?'#3ecf8e':'#ef5350'):'#3a4446'}"/>`}).join('')}).join(''):`<text x=".14" y=".6" font-size=".1" fill="#8ea2a7">Nenhuma candidata ainda. O laboratório segue testando.</text>`;
+ o+=`<text x=".14" y="1.36" font-size=".09" fill="#8ea2a7">Bolinhas: votos de Rita, Edu e Duda · só vai pro robô com a aprovação do Silva</text>`;w.innerHTML=o}
+
 function moveLab(){const t0=agoraBR(),h=Math.floor(t0/60),mn=t0%60;
  TESTERS.forEach((t,ti)=>{const g=document.querySelector(`.bot[data-lab="${t.nome}"]`);if(!g)return;const on=h>=t.ini&&h<t.fim;g.style.display=on?'':'none';if(!on){t.at=null;return}
   const pausa=t0>=t.pausa[0]&&t0<t.pausa[1],cafe=!pausa&&mn>=t.cafe&&mn<t.cafe+5,spot=pausa?'pausa':cafe?'cafe':'mesa';
@@ -383,7 +422,8 @@ function moveLab(){const t0=agoraBR(),h=Math.floor(t0/60),mn=t0%60;
   L3[0].innerHTML=`<rect x=".04" y=".05" width=".46" height=".05" rx=".02" fill="#fff" opacity=".12"/><rect x=".04" y=".05" width="${(.46*pr).toFixed(3)}" height=".05" rx=".02" fill="#b58cf0"/>`+[.15,.2,.25].map((y,i)=>`<rect x=".04" y="${y}" width="${[.42,.3,.36][i]}" height=".022" fill="#fff" opacity=".22"/>`).join('');
   L3[1].innerHTML=rk.map((r,i)=>`<rect x=".04" y="${(.04+i*.058).toFixed(3)}" width="${Math.max(.02,Math.min(.44,(r.valid&&r.valid.ret||0)*.44+.05)).toFixed(3)}" height=".036" fill="${r.forte?'#3ecf8e':'#b58cf0'}"/>`).join('')||'<rect x=".04" y=".15" width=".44" height=".03" fill="#fff" opacity=".15"/>';
   L3[2].innerHTML=`<text x=".04" y=".14" font-size=".09" fill="#b58cf0">${LAB.aprovadas}</text><text x=".04" y=".28" font-size=".07" fill="#8ea2a7">aprovadas</text>`});
- [...document.querySelectorAll('#bots .bot')].filter(g=>g.style.display!=='none').sort((a,b)=>{const xy=g=>g.dataset.lab?(TESTERS.find(t=>t.nome===g.dataset.lab).xy||LABHOME):(MK[g.dataset.k].xy||[0,0]);const A=xy(a),B=xy(b);return (A[0]+A[1])-(B[0]+B[1])}).forEach(g=>$('bots').appendChild(g))}
+ moveCouncil();
+ [...document.querySelectorAll('#bots .bot')].filter(g=>g.style.display!=='none').sort((a,b)=>{const xy=g=>g.dataset.cons?(COUNCIL.find(t=>t.nome===g.dataset.cons).xy||[13,4.5]):g.dataset.lab?(TESTERS.find(t=>t.nome===g.dataset.lab).xy||LABHOME):(MK[g.dataset.k].xy||[0,0]);const A=xy(a),B=xy(b);return (A[0]+A[1])-(B[0]+B[1])}).forEach(g=>$('bots').appendChild(g))}
 setInterval(()=>{if(ORDER.length){moveOps();moveLab()}},20000);
 
 /* ---------- gráficos: preço, EMA rápida x lenta e cruzamentos ---------- */
@@ -581,7 +621,8 @@ async function pausar(){const novo=!CTRL.pausado;if(Date.now()-conf>4000){conf=D
 
 /* ---------- eventos ---------- */
 const pick=k=>{if(MK[k]){mk=k;renderAll()}};
-$('bots').addEventListener('click',e=>{const g=e.target.closest('.bot');if(!g)return;if(g.dataset.lab){$('labCard').scrollIntoView({behavior:'smooth',block:'start'});return}pick(g.dataset.k)});
+$('bots').addEventListener('click',e=>{const g=e.target.closest('.bot');if(!g)return;if(g.dataset.lab){$('labCard').scrollIntoView({behavior:'smooth',block:'start'});return}if(g.dataset.cons){$('consCard').scrollIntoView({behavior:'smooth',block:'start'});return}pick(g.dataset.k)});
+$('static').addEventListener('click',e=>{if(e.target.closest('#silvaTag'))$('consCard').scrollIntoView({behavior:'smooth',block:'start'})});
 $('bots').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const g=e.target.closest('.bot');if(g){e.preventDefault();pick(g.dataset.k)}}});
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b)pick(b.dataset.k)});
 $('panel').addEventListener('click',e=>{if(e.target.id==='bFx')pausar();if(e.target.id==='bLogin')$('login').hidden=false});
