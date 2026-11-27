@@ -1,0 +1,42 @@
+name: Conselho (aprova estrategias com o Silva)
+
+# Escolhe candidatas do laboratório, roda o estágio de simulação, coleta os votos de
+# Rita, Edu e Duda e, só depois do clique "Aprovar" do Silva na sala, troca a estratégia
+# no config.yaml (commit automático). Não usa as chaves da corretora.
+on:
+  schedule:
+    - cron: "55 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: conselho
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  conselho:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Reunião do conselho
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python conselho.py
+      - name: Aplicar a estratégia aprovada pelo Silva
+        if: hashFiles('.config_mudou') != ''
+        run: |
+          git config user.name "Conselho Agência COINS"
+          git config user.email "conselho@users.noreply.github.com"
+          git add config.yaml
+          git commit -m "Conselho: estratégia trocada com aprovação do Silva"
+          git push
