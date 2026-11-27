@@ -1,5 +1,5 @@
 {
-  "atualizado_em": "2026-11-27T17:35:00Z",
+  "atualizado_em": "2026-11-27T17:45:00Z",
   "cidade": "Coins RJ Roleplay",
   "base": "Qbox (qbx_core) via txAdmin",
   "equipe": [
@@ -72,9 +72,10 @@
       "id": "placas",
       "setor": "Base RJ",
       "titulo": "Placas Mercosul e nomes de lugares do RJ",
-      "status": "afazer",
+      "status": "testar",
       "dono": "Téo",
-      "detalhe": "Formato de placa brasileira e blips com nomes cariocas."
+      "detalhe": "Pacote 2: placa ABC1D23 nos carros novos e locais com nomes em português. Testar comprando um carro.",
+      "precisa_silva": true
     },
     {
       "id": "spawn",
@@ -121,9 +122,10 @@
       "id": "hospital",
       "setor": "Hospital",
       "titulo": "Hospital e SAMU (qbx_ambulancejob)",
-      "status": "fazendo",
+      "status": "testar",
       "dono": "Rafa",
-      "detalhe": "Cargos do SAMU já estão no pacote 1. Falta configurar leitos, tratamento e chamada no qbx_ambulancejob."
+      "detalhe": "Pacote 1 e 2: cargos do SAMU e Hospital Municipal Coins RJ. Testar /setjob ambulance.",
+      "precisa_silva": true
     },
     {
       "id": "hospital-mlo",
@@ -137,9 +139,10 @@
       "id": "pm",
       "setor": "Polícia",
       "titulo": "PMERJ e Polícia Civil (qbx_policejob)",
-      "status": "fazendo",
+      "status": "testar",
       "dono": "Rafa",
-      "detalhe": "Patentes da PMERJ, PCERJ e PRF já estão no pacote 1. Falta configurar delegacias, armamento e prisão no qbx_policejob."
+      "detalhe": "Pacote 1 e 2: patentes da PMERJ, PCERJ e PRF e delegacias com nomes cariocas. Falta: armamento e prisão (próximo pacote).",
+      "precisa_silva": true
     },
     {
       "id": "viaturas",
@@ -153,17 +156,18 @@
       "id": "concessionaria",
       "setor": "Carros",
       "titulo": "Concessionária e preços em R$ (qbx_vehicleshop)",
-      "status": "afazer",
+      "status": "fazendo",
       "dono": "Téo",
-      "detalhe": "Categorias populares, motos e importados com preços equilibrados."
+      "detalhe": "Pacote 2: lojas Coins Motors, Coins Prime, Marina da Baía e Hangar Coins. Falta: revisar preços em R$ junto com a economia."
     },
     {
       "id": "garagens",
       "setor": "Carros",
       "titulo": "Garagens, seguro e pátio (qbx_garages)",
-      "status": "afazer",
+      "status": "testar",
       "dono": "Téo",
-      "detalhe": "Garagens públicas, de família e pátio da polícia."
+      "detalhe": "Pacote 2: estacionamentos em português, Pátio do DETRAN e garagens das 4 famílias.",
+      "precisa_silva": true
     },
     {
       "id": "carros-br",
