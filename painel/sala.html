@@ -83,6 +83,7 @@ input{font:16px "IBM Plex Sans";min-height:44px;padding:0 12px;border-radius:10p
 .bot .mug,.bot .plate{display:none}.bot[data-item=mug] .mug,.bot[data-item=plate] .plate{display:inline}.bot[data-pose=walk] .mug,.bot[data-pose=walk] .plate{display:none}
 .bot[data-pose=walk] .lg1{animation:step .35s infinite alternate}.bot[data-pose=walk] .lg2{animation:step .35s .175s infinite alternate}@keyframes step{to{transform:translateY(-3px)}}
 .bot .steam{animation:steam 2s infinite}@keyframes steam{50%{opacity:.2;transform:translateY(-2px)}}
+.bot.lab{--st:#b58cf0}
 .bot.idle .hl,.bot.idle .hr{animation-duration:1.4s}
 .bot .hl{animation:type .28s ease-in-out infinite alternate}.bot .hr{animation:type .28s ease-in-out .14s infinite alternate}
 .bot .head{animation:look 7s ease-in-out infinite;transform-origin:1px -45px;transform-box:view-box}
@@ -133,6 +134,7 @@ table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-bl
   </div>
   <aside class="col">
     <div class="card" id="panel"></div>
+    <div class="card" id="labCard"><h3>Laboratório de estratégias</h3><div class="sub">Lia (0h–8h), Davi (8h–16h) e Nina (16h–24h) só testam. Nenhum deles opera.</div><div id="lab"></div></div>
     <div class="card"><h3>Quadro de ganhos e perdas</h3><div class="sub">Operações de hoje e saldo dos últimos 7 dias</div><div id="quadro"></div></div>
     <div class="card"><h3>Pronto para operar?</h3><div class="sub">Conferido com os dados que o robô gravou</div><ul class="check" id="check"></ul></div>
     <div class="card"><h3>Log do robô</h3><div class="sub">Últimas mensagens gravadas na tabela robo_log</div><ul class="feed" id="feed"></ul></div>
@@ -178,7 +180,7 @@ async function sb(caminho,op={}){const t=await token();const r=await fetch(`${BA
 function sair(){SESSAO=null;guarda.limpar();$('login').hidden=false}
 
 /* ---------- estado ---------- */
-const MK={};let ORDER=[],mk=null,CTRL={pausado:false},LOGS=[],loaded=false,lastLoad=null,err='',seen=null,conf=0,built='';
+let LAB=null;const MK={};let ORDER=[],mk=null,CTRL={pausado:false},LOGS=[],loaded=false,lastLoad=null,err='',seen=null,conf=0,built='';
 const mmAt=(m,i)=>m.mm?(m.mm[i]??null):null;
 const stale=m=>!m.upd||(Date.now()-m.upd)>STALE;
 const totalRes=()=>ORDER.reduce((a,k)=>a+MK[k].realizado+MK[k].aberto,0);
@@ -187,6 +189,7 @@ async function carregar(){
  if(!BASE||!K){err='Faltou o config.js com a URL e a chave pública do Supabase.';renderAll();return}
  try{
   const todos=await sb('robo_kv?or=(chave.like.*:status,chave.eq.controle)&select=chave,valor');
+  const lb=todos.find(x=>x.chave==='lab:status');LAB=lb&&lb.valor&&lb.valor.grade_total?lb.valor:null;
   const ctl=todos.find(x=>x.chave==='controle');CTRL=ctl&&ctl.valor?ctl.valor:{pausado:false};
   let lista=todos.filter(x=>x.chave!=='controle').map(x=>x.valor).filter(v=>v&&v.rotulo&&typeof v.par==='string');
   const reais=lista.filter(v=>v.modo==='real');if(reais.length)lista=reais;
@@ -226,6 +229,8 @@ const RX=11,RY=8.5;
 const LOOK={BTC:{shirt:'#e39b2d',hair:'#2a1c14',skin:'#c98d63'},ETH:{shirt:'#6f86e0',hair:'#151515',skin:'#e0b08a'}};
 const LOOKX=[{shirt:'#3fae8a',hair:'#3b2416',skin:'#a8714f'},{shirt:'#c2577a',hair:'#1d1d1d',skin:'#f0c8a6'}];
 const SLOTS=[[1.5,3.1],[5.3,3.1],[1.5,5.7],[5.3,5.7]];
+const LABDESK=[1.5,5.8],LABHOME=[2.55,7.0];
+const TESTERS=[{nome:'Lia',ini:0,fim:8,look:{shirt:'#b58cf0',hair:'#5a2e1c',skin:'#e6b48f'}},{nome:'Davi',ini:8,fim:16,look:{shirt:'#4fb6a0',hair:'#1b1b1b',skin:'#8d5a3b'}},{nome:'Nina',ini:16,fim:24,look:{shirt:'#e0687e',hair:'#2b2018',skin:'#f1c7a3'}}];
 const WALLS=[{t:()=>onY(.5,0,2.3),w:5.9,h:1.7},{t:()=>onXr(5.7,2.25),w:4.9,h:1.65}];
 function sky(){const h=new Date().getHours()+new Date().getMinutes()/60;
  if(h>=7&&h<17)return {top:'#7fb6e0',bot:'#d8ebf6',city:'#8ea3b4',win:'#e9eef2',lit:0,spill:.07};
@@ -296,8 +301,22 @@ function buildRoom(){const key=ORDER.join(',');if(built===key)return;built=key;
  const bg=$('bots');bg.innerHTML='';let chairs='';
  ORDER.slice(0,4).forEach((k,n)=>{const m=MK[k],L=LOOK[k]||LOOKX[n%2];
   const [cx,cy]=P(m.home[0],m.home[1]);chairs+=`<g transform="translate(${cx.toFixed(1)},${cy.toFixed(1)})"><ellipse cx="0" cy="-2" rx="10" ry="3.4" fill="#26292c"/><rect x="-1.6" y="-15" width="3.2" height="13" fill="#3a3e42"/><ellipse cx="0" cy="-16" rx="13" ry="5" fill="#2b2f33"/><rect x="-11.5" y="-31" width="23" height="15" rx="5" fill="#23272b"/><rect x="-11.5" y="-31" width="23" height="4" rx="2" fill="#2f3439"/></g>`;
-  const g=document.createElementNS(NS,'g');g.setAttribute('class','bot');g.dataset.k=k;g.dataset.pose='sit';g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label','Operador '+m.par);
-  const name='Operador '+k,tw=Math.max(name.length*7+26,150),dk=shade(L.shirt,.72),pants='#2b3440';
+  const g=pessoa(k,'Operador '+k,L,'Operador '+m.par);
+  m.at=null;bg.appendChild(g)});
+ // laboratório: mesa dos testadores (3 turnos de 8 h)
+ {const [x,y]=LABDESK,w=2.3,d=.78;let st2=quad([P(x-.08,y-.02),P(x+w+.12,y-.02),P(x+w+.12,y+d+.14),P(x-.08,y+d+.14)],'#000','opacity=".5" filter="url(#shadow)"');
+  const leg=['#2b2b2b','#1c1c1c','#242424'],monC=['#22282b','#121618','#1a1f22'];
+  st2+=box(x+.06,y+.06,.06,.06,.42,leg)+box(x+w-.6,y+.08,.52,.62,.4,['#4d3f33','#3a2f26','#43372c'])+box(x+.06,y+d-.12,.06,.06,.42,leg)+box(x,y,w,d,.05,['#6d5c4b','#4f4236','#5f5041'],.42);
+  for(let j=0;j<3;j++){const mx=x+.14+j*.68;st2+=box(mx+.24,y+.1,.12,.12,.02,monC,.47)+box(mx+.28,y+.12,.04,.04,.1,monC,.47)+box(mx,y+.08,.6,.05,.4,monC,.55)+`<g transform="${onY(mx+.03,y+.13,.92)}"><rect width=".54" height=".34" fill="#071010" stroke="#b58cf0" stroke-width=".012"/><g id="lab-${j}"></g></g>`}
+  st2+=box(x+.62,y+.44,.82,.2,.025,['#2a2d30','#1a1c1e','#222528'],.47)+box(x+1.9,y+.4,.11,.11,.13,['#f2efe9','#c9c3b8','#ddd7cc'],.47);
+  const [ta,tb]=P(x+1.1,y+.95);st2+=`<text x="${ta}" y="${tb+30}" fill="#8f79b8" font-size="10" text-anchor="middle" letter-spacing=".08em">LABORATÓRIO</text>`;
+  const [cx,cy]=P(LABHOME[0],LABHOME[1]);st2+=`<g transform="translate(${cx.toFixed(1)},${cy.toFixed(1)})"><ellipse cx="0" cy="-2" rx="10" ry="3.4" fill="#26292c"/><rect x="-1.6" y="-15" width="3.2" height="13" fill="#3a3e42"/><ellipse cx="0" cy="-16" rx="13" ry="5" fill="#2b2f33"/><rect x="-11.5" y="-31" width="23" height="15" rx="5" fill="#23272b"/></g>`;
+  $('static').insertAdjacentHTML('beforeend',st2);
+  TESTERS.forEach(t=>{const g=pessoa('LAB-'+t.nome,t.nome,t.look,'Testador '+t.nome);g.classList.add('tester');g.dataset.lab=t.nome;g.style.display='none';t.at=null;bg.appendChild(g)})}
+ $('static').insertAdjacentHTML('beforeend',chairs)}
+
+function pessoa(k,name,L,label){const g=document.createElementNS(NS,'g');g.setAttribute('class','bot');g.dataset.k=k;g.dataset.pose='sit';g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label',label);
+  const tw=Math.max(name.length*7+26,150),dk=shade(L.shirt,.72),pants='#2b3440';
   const head=`<rect x="-3" y="-45" width="6" height="5" fill="${L.skin}"/><g class="head"><circle cx="1" cy="-53" r="9" fill="${L.skin}"/><path d="M-8.3 -52 A9.3 9.3 0 0 1 9.6 -56 Q6 -50 6.5 -45 Q0 -43 -7 -46 Z" fill="${L.hair}"/><ellipse cx="7.6" cy="-51" rx="2.6" ry="4.6" fill="${L.skin}"/><path d="M-8 -53 Q0 -66 9 -55" stroke="#1d1f22" stroke-width="2" fill="none"/><ellipse cx="-8" cy="-52" rx="2.4" ry="3.4" fill="#1d1f22"/></g>`;
   const torso=`<path d="M-11 -16 Q-13 -36 -7 -41 L7 -41 Q13 -36 11 -16 Z" fill="${L.shirt}"/><path d="M-7 -41 L7 -41 Q9 -38 9 -34 L-9 -34 Q-9 -38 -7 -41Z" fill="#fff" opacity=".12"/>`;
   g.innerHTML=`<g class="mv"><ellipse cx="0" cy="0" rx="15" ry="6" fill="rgba(0,0,0,.4)"/><ellipse class="ring" cx="0" cy="0" rx="24" ry="9.5" fill="none" stroke="#e9b949" stroke-width="2"/>
@@ -312,9 +331,7 @@ function buildRoom(){const key=ORDER.join(',');if(built===key)return;built=key;
   <g class="pose-rest"><rect x="-9" y="-20" width="18" height="8" rx="3" fill="${pants}"/><rect x="-9" y="-14" width="7" height="13" rx="2.5" fill="${pants}"/><rect x="2" y="-14" width="7" height="13" rx="2.5" fill="${pants}"/>
    <g transform="rotate(-6 0 -20)">${torso}<path d="M-9 -36 Q-12 -28 -9 -20" stroke="${dk}" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M9 -36 Q12 -28 9 -20" stroke="${dk}" stroke-width="5" fill="none" stroke-linecap="round"/>${head}</g></g>
   <g class="tag" transform="translate(0,-90)"><rect x="${-tw/2}" y="-12" width="${tw}" height="34" rx="10" fill="rgba(12,11,9,.92)" style="stroke:var(--st)" stroke-opacity=".85"/><circle cx="${-tw/2+12}" cy="-1" r="3.5" style="fill:var(--st)" class="lamp"/><text x="4" y="2" fill="#e8f0f1" font-size="12" font-weight="600" text-anchor="middle">${esc(name)}</text><text class="st" x="0" y="16" fill="#8ea2a7" font-size="10.5" text-anchor="middle"></text></g></g>`;
-  m.at=null;bg.appendChild(g)});
- $('static').insertAdjacentHTML('beforeend',chairs)}
-
+  return g}
 /* ---------- rotina dos operadores (relógio de Brasília) ---------- */
 const HOR={inicio:'09:00',almoco:['12:00','13:00'],fim:'18:00'};
 const toMin=s=>parseInt(String(s).slice(0,2))*60+parseInt(String(s).slice(3,5));
@@ -338,8 +355,19 @@ function moveOps(){ORDER.slice(0,4).forEach((k,n)=>{const m=MK[k],g=document.que
   else if(g.dataset.pose!=='walk'){g.dataset.pose=a.pose;mv.style.transform=flip}
   g.dataset.item=a.item||'';g.classList.toggle('idle',!a.type);
   g.querySelector('.st').textContent=a.txt;g.querySelector('.tag').setAttribute('transform',`translate(0,${-90-(a.spot!=='mesa'?n*40:0)})${flip}`)});
- [...document.querySelectorAll('#bots .bot')].sort((a,b)=>{const A=MK[a.dataset.k].xy||[0,0],B=MK[b.dataset.k].xy||[0,0];return (A[0]+A[1])-(B[0]+B[1])}).forEach(g=>$('bots').appendChild(g))}
-setInterval(()=>{if(ORDER.length)moveOps()},20000);
+ }
+function moveLab(){const h=Math.floor(agoraBR()/60),mn=agoraBR()%60;
+ TESTERS.forEach(t=>{const g=document.querySelector(`.bot[data-lab="${t.nome}"]`);if(!g)return;const on=h>=t.ini&&h<t.fim;g.style.display=on?'':'none';if(!on){t.at=null;return}
+  const cafe=mn>=50&&mn<55,spot=cafe?'cafe':'mesa',xy=cafe?[1.85,1.25]:LABHOME,[x,y]=P(xy[0],xy[1]),mv=g.querySelector('.mv');t.xy=xy;
+  if(t.at!==spot){const first=t.at===null;t.at=spot;g.style.transition=first?'none':'';g.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;if(!first){g.dataset.pose='walk';clearTimeout(t.tw);t.tw=setTimeout(()=>{g.dataset.pose=cafe?'stand':'sit'},3100)}else g.dataset.pose=cafe?'stand':'sit'}
+  g.dataset.item=cafe?'mug':'';g.setAttribute('class','bot tester lab'+(mk==='LAB'?' sel':''));
+  const n=LAB?LAB.testadas_unicas:0;g.querySelector('.st').textContent=cafe?`turno ${t.ini}h–${t.fim}h · café`:`turno ${t.ini}h–${t.fim}h · ${LAB?n.toLocaleString('pt-BR')+' testadas':'testando'}`});
+ const lab=[0,1,2].map(j=>$('lab-'+j));if(lab[0]&&LAB){const pr=LAB.grade_total?LAB.cursor/LAB.grade_total:0;
+  lab[0].innerHTML=`<rect x=".04" y=".05" width=".46" height=".05" rx=".02" fill="#fff" opacity=".12"/><rect x=".04" y=".05" width="${(.46*pr).toFixed(3)}" height=".05" rx=".02" fill="#b58cf0"/>`+[.15,.2,.25].map((y,i)=>`<rect x=".04" y="${y}" width="${[.42,.3,.36][i]}" height=".022" fill="#fff" opacity=".22"/>`).join('');
+  const rk=(LAB.ranking||[]).slice(0,5);lab[1].innerHTML=rk.map((r,i)=>`<rect x=".04" y="${(.04+i*.058).toFixed(3)}" width="${Math.max(.02,Math.min(.44,(r.valid&&r.valid.ret||0)*.44+.05)).toFixed(3)}" height=".036" fill="${r.forte?'#3ecf8e':'#b58cf0'}"/>`).join('')||'<rect x=".04" y=".15" width=".44" height=".03" fill="#fff" opacity=".15"/>';
+  lab[2].innerHTML=`<text x=".04" y=".14" font-size=".09" fill="#b58cf0">${LAB.aprovadas}</text><text x=".04" y=".28" font-size=".07" fill="#8ea2a7">aprovadas</text>`}
+ [...document.querySelectorAll('#bots .bot')].filter(g=>g.style.display!=='none').sort((a,b)=>{const xy=g=>g.dataset.lab?(TESTERS.find(t=>t.nome===g.dataset.lab).xy||LABHOME):(MK[g.dataset.k].xy||[0,0]);const A=xy(a),B=xy(b);return (A[0]+A[1])-(B[0]+B[1])}).forEach(g=>$('bots').appendChild(g))}
+setInterval(()=>{if(ORDER.length){moveOps();moveLab()}},20000);
 
 /* ---------- gráficos: preço, EMA rápida x lenta e cruzamentos ---------- */
 const fastAt=(m,i)=>m.fast?(m.fast[i]??null):null;
@@ -395,7 +423,7 @@ function renderRoom(){buildRoom();const fxOn=!CTRL.pausado;
   const cls=stale(m)||!fxOn?'warn':m.qty?'pos':'';g.setAttribute('class',`bot ${cls}${k===mk?' sel':''}${g.classList.contains('idle')?' idle':''}`);
   document.querySelectorAll('.scr-'+k).forEach(e=>e.setAttribute('stroke',m.qty?'#3ecf8e':stale(m)||!fxOn?'#f2b33d':'#2bb5a8'));
   document.querySelectorAll('.pool-'+k).forEach(e=>e.setAttribute('opacity',m.qty?1:0));document.querySelectorAll('.dglow-'+k).forEach(e=>e.setAttribute('fill',m.qty?'#3ecf8e':'#2bb5a8'));monitors(k)});
- moveOps();
+ moveOps();moveLab();
  WALLS.forEach((W,i)=>{const k=ORDER[i],el=$('wall'+i);if(!el)return;wallChart(el,k?MK[k]:null,W.w,W.h);$('wallB'+i).setAttribute('stroke',k&&k===mk?'#e9b949':'#3d3628')});
  const bd=$('board');if(bd&&ORDER.length){const L=hoje(),fech=L.filter(x=>!x.aberto),g=fech.filter(x=>x.r>0).length,p=fech.filter(x=>x.r<=0).length,tot=L.reduce((a,x)=>a+x.r,0),f=faseAgora(MK[ORDER[0]]);
   let o=`<text x=".14" y=".22" font-size=".13" font-weight="700" fill="#e9b949" font-family="Chakra Petch">Ganhos e perdas · hoje</text><text x="2.66" y=".22" font-size=".11" fill="${f==='aberto'?'#3ecf8e':'#f2b33d'}" text-anchor="end">${f==='aberto'?'expediente':f==='almoco'?'almoço':'fechado'}</text>`;
@@ -484,6 +512,14 @@ function renderCheck(){if(!ORDER.length){$('check').innerHTML=`<li class="w"><i>
   [ms.some(m=>m.qty)?true:'w','Sinal de entrada',ms.map(m=>{const L=m.d.length,mm=L?mmAt(m,L-1):null;if(m.qty)return `${m.key} comprado`;if(m.fast){const f=fastAt(m,L-1);return f!=null&&mm?`${m.key}: EMA rápida ${f>mm?'acima':'abaixo'} da lenta`:`${m.key} sem médias`}return mm?`${m.key} falta ${pct(mm*(1+m.band)/m.price-1).replace('+','')}`:`${m.key} sem média`}).join(' · ')]];
  $('check').innerHTML=items.map(([ok,t,s])=>{const c=ok===true?'y':ok==='w'?'w':'n';return `<li class="${c}"><i>${c==='y'?'✓':c==='w'?'!':'×'}</i><span>${t}<small>${esc(s)}</small></span></li>`}).join('')}
 
+function renderLab(){const el=$('lab');if(!LAB){el.innerHTML=`<div class="diag">${loaded?'O laboratório ainda não gravou resultados. A primeira rodada sai em até 1 hora.':'Entre para ver o laboratório.'}</div>`;return}
+ const L=LAB,pr=L.grade_total?L.cursor/L.grade_total:0,t=L.turno||{},R=L.regras||{},fr=v=>v==null?'–':pct(v),cl=v=>v>0?'up':v<0?'down':'';
+ const linha=(r,atual)=>`<tr><td>${atual?'<b>Atual do robô</b><br>':''}${esc(r.par)} · ${esc(r.nome)}${r.forte?' <span class="tag c">forte</span>':''}</td><td class="r ${cl(r.valid&&r.valid.ret)}">${fr(r.valid&&r.valid.ret)}</td><td class="r">${r.valid?r.valid.pf.toFixed(2).replace('.',','):'–'}</td><td class="r ${cl(r.teste&&r.teste.ret)}">${fr(r.teste&&r.teste.ret)}</td><td class="r">${(r.treino?r.treino.n:0)+(r.valid?r.valid.n:0)+(r.teste?r.teste.n:0)}</td></tr>`;
+ el.innerHTML=`<div class="kv" style="margin-top:10px"><div><span>De turno agora</span><b>${esc(t.nome||'–')} · ${t.inicio??''}h–${t.fim??''}h</b></div><div><span>Testadas</span><b>${(L.testadas_unicas||0).toLocaleString('pt-BR')} de ${L.grade_total.toLocaleString('pt-BR')}</b></div><div><span>Aprovadas</span><b class="${L.aprovadas?'up':''}">${L.aprovadas}</b></div><div><span>Fortes (passaram até em 2026)</span><b class="${L.fortes?'up':''}">${L.fortes}</b></div></div>
+ <div style="margin-top:12px"><div class="sub">Rodada ${L.rodada} · ${Math.round(pr*100)}% da grade · último lote: ${esc(L.ultimo_lote&&L.ultimo_lote.por)} testou ${L.ultimo_lote?L.ultimo_lote.qtd:0} ${ago(new Date(L.atualizado_em))}</div><div class="bar" style="margin-top:6px"><i style="width:${(pr*100).toFixed(1)}%;background:#b58cf0"></i></div></div>
+ <table class="stack" style="margin-top:12px"><thead><tr><th>Estratégia</th><th class="r">Validação</th><th class="r">PF</th><th class="r">2026</th><th class="r">Ops</th></tr></thead><tbody>${(L.ranking||[]).slice(0,8).map(r=>linha(r)).join('')||'<tr><td colspan="5">Nenhuma aprovada ainda.</td></tr>'}${L.atual?linha(L.atual,true):''}</tbody></table>
+ <div class="sub" style="margin-top:10px">Treino ${R.treino?R.treino.join(' a ').replace(/-\d\d-\d\d/g,''):'2022–23'}, validação 2024–25 e conferência em 2026, com taxa de ${((R.taxa||0)*100).toFixed(1).replace('.',',')}% + slippage por ordem. Dados: ${esc(R.dados||'Bitstamp')}. Testar milhares de combinações faz algumas passarem por sorte: nenhuma vai pro dinheiro real sem antes rodar no modo simulado.</div>`}
+
 function renderQuadro(){const el=$('quadro');if(!ORDER.length){el.innerHTML='';return}
  const L=hoje(),fech=L.filter(x=>!x.aberto),tot=L.reduce((a,x)=>a+x.r,0),g=fech.filter(x=>x.r>0).length,p=fech.filter(x=>x.r<=0).length;
  const dias=[];for(let i=6;i>=0;i--){const d=new Date(Date.now()-i*864e5),k=diaBR(d);let v=0,n=0;ORDER.forEach(q=>MK[q].trades.forEach(t=>{if(t.side==='V'&&t.r!=null&&diaBR(t.t)===k){v+=t.r;n++}}));dias.push({d,v,n})}
@@ -499,7 +535,7 @@ function renderAll(){
  $('tabs').innerHTML=ORDER.map(k=>`<button class="tab" role="tab" data-k="${esc(k)}">${esc(MK[k].par)}</button>`).join('');
  const any=ORDER.some(k=>stale(MK[k]));$('liveDot').className=!loaded?'':any||CTRL.pausado?'warn':'on';
  $('liveTxt').textContent=!loaded?(err||'Conectando ao robô…'):`Dados reais · lidos às ${hhmm(lastLoad)} · atualiza sozinho a cada 1 min`;
- renderKpis();renderRoom();renderFx();renderPanel();renderCheck();renderQuadro();renderLog()}
+ renderKpis();renderRoom();renderFx();renderPanel();renderCheck();renderLab();renderQuadro();renderLog()}
 
 async function pausar(){const novo=!CTRL.pausado;if(Date.now()-conf>4000){conf=Date.now();renderPanel();setTimeout(renderPanel,4100);return}conf=0;
  try{await sb('robo_kv',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify({chave:'controle',valor:{pausado:novo,em:new Date().toISOString()},atualizado_em:new Date().toISOString()})});
@@ -507,7 +543,7 @@ async function pausar(){const novo=!CTRL.pausado;if(Date.now()-conf>4000){conf=D
 
 /* ---------- eventos ---------- */
 const pick=k=>{if(MK[k]){mk=k;renderAll()}};
-$('bots').addEventListener('click',e=>{const g=e.target.closest('.bot');if(g)pick(g.dataset.k)});
+$('bots').addEventListener('click',e=>{const g=e.target.closest('.bot');if(!g)return;if(g.dataset.lab){$('labCard').scrollIntoView({behavior:'smooth',block:'start'});return}pick(g.dataset.k)});
 $('bots').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const g=e.target.closest('.bot');if(g){e.preventDefault();pick(g.dataset.k)}}});
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b)pick(b.dataset.k)});
 $('panel').addEventListener('click',e=>{if(e.target.id==='bFx')pausar();if(e.target.id==='bLogin')$('login').hidden=false});
