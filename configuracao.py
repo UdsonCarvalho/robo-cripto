@@ -34,6 +34,15 @@ def validar(cfg):
         erros.append("ema_rapida precisa ser menor que ema_lenta")
     if e["stop_atr"] <= 0 or e["alvo_atr"] < 0 or e.get("trailing_atr", 0) < 0:
         erros.append("stop_atr precisa ser positivo; alvo_atr e trailing_atr >= 0")
+    h = cfg.get("horario")
+    if h:
+        import re
+        hhmm = re.compile(r"^\d\d:\d\d$")
+        campos = [h.get("inicio", ""), h.get("fim", "")] + list(h.get("almoco") or [])
+        if not all(hhmm.match(str(x)) for x in campos):
+            erros.append("horario: use HH:MM em inicio, fim e almoco (ex.: \"09:00\")")
+    if (r.get("valor_fixo_reais") or 0) < 0:
+        erros.append("risco.valor_fixo_reais não pode ser negativo")
     if erros:
         sys.exit("Erro no config.yaml:\n - " + "\n - ".join(erros))
     if r["risco_por_trade"] > 0.02:

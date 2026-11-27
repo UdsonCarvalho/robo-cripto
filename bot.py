@@ -24,6 +24,7 @@ import os
 import sys
 import time
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -129,6 +130,23 @@ class CorretoraPaper(Corretora):
         return qtd, preco
 
 
+# ================================================================ expediente
+def fase_expediente(cfg, agora):
+    """'aberto' | 'almoco' | 'fechado' conforme o bloco "horario" do config (None = opera 24 h)."""
+    h = cfg.get("horario")
+    if not h:
+        return None
+    local = agora.astimezone(ZoneInfo(h.get("fuso", "America/Sao_Paulo")))
+    minuto = local.hour * 60 + local.minute
+    m = lambda txt: int(txt[:2]) * 60 + int(txt[3:5])
+    if minuto < m(h["inicio"]) or minuto >= m(h["fim"]):
+        return "fechado"
+    almoco = h.get("almoco")
+    if almoco and m(almoco[0]) <= minuto < m(almoco[1]):
+        return "almoco"
+    return "aberto"
+
+
 # ================================================================ robô
 class Robo:
     def __init__(self, cfg, corretora=None, armazenamento=None, pnl_total_dia=None):
@@ -138,6 +156,7 @@ class Robo:
         self.taxa = cfg["custos"]["taxa"]
         self.arm = armazenamento or criar_armazenamento(self.rotulo)
         self.ultimo_preco = None
+        self.fase = None
         self.estado = self._carregar_estado()
         if corretora is not None:
             self.corretora = corretora
@@ -188,6 +207,8 @@ class Robo:
                 "posicao": self.estado["posicao"], "pnl_dia": self.estado["pnl_dia"],
                 "grafico": self.estado.get("grafico"),
                 "trades_dia": self.estado["trades_dia"], "parado": self.pausado(),
+                "expediente": self.fase, "horario": self.cfg.get("horario"),
+                "valor_fixo_reais": self.risco.get("valor_fixo_reais") or 0,
                 "saldo_inicial": float(self.cfg["paper"]["saldo_inicial"]) if self.cfg["modo"] == "paper" else None,
             })
         except Exception as e:
@@ -226,16 +247,28 @@ class Robo:
             log.error(f"Não consegui registrar a operação: {e}")
 
     def _guardar_grafico(self, df):
-        """Dados do gráfico "preço x linha" para o painel (últimos 200 candles)."""
+        """Dados do gráfico para o painel e a sala (últimos 200 candles)."""
         col = "mm" if "mm" in df.columns else ("ema_lenta" if "ema_lenta" in df.columns else "ema_tendencia")
         ult = df.tail(200)
-        self.estado["grafico"] = {
-            "linha": {"mm": f"Média {self.est.get('mm_periodo', '')} dias", "ema_lenta": "EMA lenta"}.get(col, "EMA tendência"),
-            "t": [ts.strftime("%Y-%m-%d") for ts in ult.index],
+        diario = str(self.cfg["timeframe"]).endswith("d")
+        fmt = (lambda ts: ts.strftime("%Y-%m-%d")) if diario else (lambda ts: ts.strftime("%Y-%m-%dT%H:%M:00Z"))
+        lista = lambda serie: [None if pd.isna(x) else round(float(x), 2) for x in serie]
+        nomes = {"mm": f"Média {self.est.get('mm_periodo', '')} dias", "ema_lenta": f"EMA {self.est.get('ema_lenta', '')}"}
+        g = {
+            "linha": nomes.get(col, "EMA tendência"),
+            "t": [fmt(ts) for ts in ult.index],
             "preco": [round(float(x), 2) for x in ult["close"]],
-            "media": [None if pd.isna(x) else round(float(x), 2) for x in ult[col]],
+            "media": lista(ult[col]),
             "banda": float(self.est.get("mm_banda", 0.0)) if col == "mm" else 0.0,
         }
+        if "ema_rapida" in ult.columns:
+            g["rapida"] = lista(ult["ema_rapida"])
+            g["linha_rapida"] = f"EMA {self.est.get('ema_rapida', '')}"
+        ultimo = ult.iloc[-1]
+        g["ind"] = {k: (None if pd.isna(ultimo[k]) else round(float(ultimo[k]), 2))
+                    for k in ("ema_tendencia", "rsi", "atr") if k in ult.columns}
+        g["regras"] = {k: self.est.get(k) for k in ("tipo", "ema_rapida", "ema_lenta", "ema_tendencia", "rsi_min", "rsi_max", "stop_atr")}
+        self.estado["grafico"] = g
 
     # ---------- ordens
     def abrir(self, valor_atr):
@@ -243,7 +276,11 @@ class Robo:
         stop, _ = niveis_saida(preco, valor_atr, self.est)
         cotacao, _ = self.corretora.saldos()
         capital = aplicar_teto_capital(cotacao, self.risco)
-        qtd = tamanho_posicao(capital, preco, stop, self.risco)
+        fixo = float(self.risco.get("valor_fixo_reais") or 0)
+        if fixo > 0:  # valor fixo por operação (ex.: R$ 1), limitado ao saldo disponível
+            qtd = min(fixo, capital) / preco * (1 - self.taxa)
+        else:
+            qtd = tamanho_posicao(capital, preco, stop, self.risco)
         if qtd * preco < max(self.corretora.custo_minimo, 1e-9):
             log.warning(f"Ordem de {qtd * preco:.2f} abaixo do mínimo da exchange ({self.corretora.custo_minimo}). Pulando.")
             return
@@ -293,6 +330,13 @@ class Robo:
             elif pos["alvo"] is not None and preco >= pos["alvo"]:
                 self.fechar("alvo")
 
+        # 1b) expediente: fora do horário não abre nada; às 18h encerra a posição do dia
+        self.fase = fase_expediente(self.cfg, agora)
+        pos = self.estado["posicao"]
+        if pos and self.fase == "fechado" and (self.cfg.get("horario") or {}).get("fechar_no_fim", True):
+            log.info(f"[{self.cfg['par']}] Fim do expediente: encerrando a posição do dia.")
+            self.fechar("fim do expediente")
+
         # 2) estratégia só roda quando fecha um candle novo
         tf = self.corretora.tf_ms
         ultimo_fechado = int(agora.timestamp() * 1000) // tf * tf - tf
@@ -321,6 +365,9 @@ class Robo:
             return
 
         if not c["entrada"]:
+            return
+        if self.fase in ("almoco", "fechado"):
+            log.info(f"[{self.cfg['par']}] Sinal de compra ignorado: {'horário de almoço' if self.fase == 'almoco' else 'fora do expediente'}.")
             return
         if self.pausado():
             log.info("Sinal de compra ignorado: robô pausado.")
